@@ -1,0 +1,3 @@
+backend/data/*.log
+frontend/node_modules
+backend/data/processing_audit.log
