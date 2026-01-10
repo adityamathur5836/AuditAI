@@ -91,9 +91,17 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
                 </td>
                 <td style={{ paddingRight: '1.5rem' }}>
                   <button 
-                    className="btn btn-outline" 
+                    className="btn btn-primary" 
                     onClick={() => onInvestigate(alert)}
-                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', border: '1px solid #cbd5e1' }}
+                    style={{ 
+                        padding: '0.5rem 1rem', 
+                        fontSize: '0.75rem', 
+                        backgroundColor: '#2563eb', 
+                        color: 'white',
+                        boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                        fontWeight: 600,
+                        border: 'none'
+                    }}
                   >
                     Investigate <ChevronRight size={14} />
                   </button>

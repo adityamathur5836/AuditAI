@@ -1,17 +1,23 @@
 import React from 'react';
-import { LayoutDashboard, AlertCircle, FileText, Database, Settings, Shield, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { LayoutDashboard, ShieldAlert, FileText, DollarSign, Settings, Shield, User, UploadCloud, Users } from 'lucide-react';
+import { AlertCircle, Database } from 'lucide-react'; // Added missing imports for AlertCircle and Database
 
 const Sidebar = ({ currentView, onViewChange }) => {
+  const { user } = useAuth(); // Get user from context
+
   const navItems = [
     { icon: LayoutDashboard, id: 'list', label: 'Dashboard' },
+    { icon: UploadCloud, id: 'upload', label: 'Upload & Analyze' },
     { icon: FileText, id: 'analytics', label: 'Analytics' },
+    { icon: Users, id: 'vendors', label: 'Vendors' },
     { icon: AlertCircle, id: 'alerts_queue', label: 'Alerts Queue' },
     { icon: Database, id: 'transactions', label: 'Transactions' },
     { icon: Settings, id: 'config', label: 'Configuration' },
   ];
 
   return (
-    <div className="sidebar">
+    <div className="sidebar h-[100vh]">
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', padding: '0 0.5rem' }}>
         <div style={{ backgroundColor: '#2563eb', padding: '0.4rem', borderRadius: '8px' }}>
           <Shield size={24} color="white" fill="white" />
@@ -62,8 +68,8 @@ const Sidebar = ({ currentView, onViewChange }) => {
             <User size={20} color="#64748b" />
           </div>
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>Jane D. Auditor</p>
-            <p style={{ fontSize: '0.625rem', color: '#64748b', fontWeight: 600 }}>Senior Analyst</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{user?.username || 'User'}</p>
+            <p style={{ fontSize: '0.625rem', color: '#64748b', fontWeight: 600 }}>{user?.role || 'Analyst'}</p>
           </div>
           <Settings size={14} color="#94a3b8" style={{ cursor: 'pointer' }} />
         </div>
