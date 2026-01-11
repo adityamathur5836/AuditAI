@@ -181,5 +181,26 @@ export default {
     registerUser,
     fetchCurrentUser,
     updateAlertStatus,
+    updateAlertStatus,
+    fetchNetworkGraph,
+    fetchBenfordStats,
     API_BASE,
 };
+
+/**
+ * Fetch Network Graph Data
+ */
+export async function fetchNetworkGraph() {
+    const response = await fetch(`${API_BASE}/api/network/graph`, { headers: getAuthHeaders() });
+    if (!response.ok) return null;
+    return await response.json();
+}
+
+/**
+ * Fetch Benford's Law Stats
+ */
+export async function fetchBenfordStats() {
+    const response = await fetch(`${API_BASE}/api/stats/benford`, { headers: getAuthHeaders() });
+    if (!response.ok) return null;
+    return await response.json();
+}

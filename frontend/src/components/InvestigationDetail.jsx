@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-  ArrowLeft, 
-  ShieldAlert, 
-  TrendingUp, 
-  Info, 
-  CheckCircle, 
-  XCircle, 
-  MessageSquare, 
-  ShieldCheck, 
-  Scale, 
+import {
+  ArrowLeft,
+  ShieldAlert,
+  TrendingUp,
+  Info,
+  CheckCircle,
+  XCircle,
+  MessageSquare,
+  ShieldCheck,
+  Scale,
   Calendar,
   Building2,
   Bell,
@@ -27,12 +27,39 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
   const [reason, setReason] = React.useState('');
 
   const handleAction = (action) => {
+    if (action === 'export') {
+      const reportContent = `
+AUDIT AI - INVESTIGATION REPORT
+-------------------------------
+Transaction ID: ${alert.transaction_id}
+Date: ${new Date().toLocaleDateString()}
+Vendor: ${alert.vendor}
+Department: ${alert.department}
+Risk Score: ${(alert.risk_score * 100).toFixed(0)}/100
+Amount: ₹${alert.amount}
+
+AI ANALYSIS:
+${generateRiskExplanation(alert)}
+
+STATUS:
+Current Status: ${alert.status || 'Active'}
+        `;
+      const element = document.createElement("a");
+      const file = new Blob([reportContent], { type: 'text/plain' });
+      element.href = URL.createObjectURL(file);
+      element.download = `AuditAI_Report_${alert.transaction_id}.txt`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      return;
+    }
+
     setFeedbackStatus('loading');
     setTimeout(() => {
-        setFeedbackStatus(action);
-        if (onStatusUpdate && alert) {
-            onStatusUpdate(alert.transaction_id, action);
-        }
+      setFeedbackStatus(action);
+      if (onStatusUpdate && alert) {
+        onStatusUpdate(alert.transaction_id, action);
+      }
     }, 1000);
   };
 
@@ -40,23 +67,27 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
 
   // Dynamic Logic Generation
   const generateRiskExplanation = (alert) => {
-      const amount = alert.amount || 0;
-      const score = alert.risk_score || 0;
-      const dept = alert.department || 'General';
+    // PREFER SERVER-SIDE AI NARRATIVE
+    if (alert.explanation) return alert.explanation;
 
-      let explanation = `Analysis indicates a significant deviation in ${dept} procurement. `;
-      
-      if (score > 0.8) {
-          explanation += `Specifically, the transaction value of ₹${(amount/100000).toFixed(2)} Lakhs is ${(score*60).toFixed(0)}% higher than the sector benchmark. `;
-          explanation += `This creates a high probability of artificial inflation or misclassification.`;
-      } else if (score > 0.6) {
-          explanation += `The provider has triggered multiple velocity checks within a 30-day window. `;
-          explanation += `Cross-referencing with peer vendors suggests a lower unit cost is standard for this category.`;
-      } else {
-          explanation += `While the amount is within bounds, the timing (weekend/holiday) is irregular for this department.`;
-      }
+    // Fallback
+    const amount = alert.amount || 0;
+    const score = alert.risk_score || 0;
+    const dept = alert.department || 'General';
 
-      return explanation;
+    let explanation = `Analysis indicates a significant deviation in ${dept} procurement. `;
+
+    if (score > 0.8) {
+      explanation += `Specifically, the transaction value of ₹${(amount / 100000).toFixed(2)} Lakhs is ${(score * 60).toFixed(0)}% higher than the sector benchmark. `;
+      explanation += `This creates a high probability of artificial inflation or misclassification.`;
+    } else if (score > 0.6) {
+      explanation += `The provider has triggered multiple velocity checks within a 30-day window. `;
+      explanation += `Cross-referencing with peer vendors suggests a lower unit cost is standard for this category.`;
+    } else {
+      explanation += `While the amount is within bounds, the timing (weekend/holiday) is irregular for this department.`;
+    }
+
+    return explanation;
   };
 
   return (
@@ -86,27 +117,27 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
 
           {/* Metric Cards Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2.5rem' }}>
-            <MetricCard 
-              icon={<Building2 size={24} color="#3b82f6" />} 
+            <MetricCard
+              icon={<Building2 size={24} color="#3b82f6" />}
               label="ENTITY TYPE"
               value="Vendor (Contractor)"
               info="Verified Entity"
             />
-            <MetricCard 
-              icon={<ShieldAlert size={24} color="#ef4444" />} 
+            <MetricCard
+              icon={<ShieldAlert size={24} color="#ef4444" />}
               label="RISK SCORE"
               value={`${(alert.risk_score * 100).toFixed(0)}/100`}
               info="Critical"
               color="#ef4444"
             />
-            <MetricCard 
-              icon={<TrendingUp size={24} color="#f59e0b" />} 
+            <MetricCard
+              icon={<TrendingUp size={24} color="#f59e0b" />}
               label="PRIMARY ANOMALY"
               value={alert.type === 'STAT_OUTLIER' ? 'Cost Spike' : 'Pattern Match'}
               info="Anomaly Detected"
             />
-            <MetricCard 
-              icon={<Activity size={24} color="#a855f7" />} 
+            <MetricCard
+              icon={<Activity size={24} color="#a855f7" />}
               label="AI CONFIDENCE"
               value="94%"
               info="High Fidelity"
@@ -114,9 +145,9 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
           </div>
 
           {/* AI Analysis Box */}
-          <div className="card" style={{ 
-            border: '2px solid #3b82f6', 
-            borderRadius: '16px', 
+          <div className="card" style={{
+            border: '2px solid #3b82f6',
+            borderRadius: '16px',
             padding: '2rem',
             position: 'relative',
             overflow: 'hidden'
@@ -127,7 +158,7 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
               </div>
               <h3 style={{ fontSize: '1.125rem', color: '#1e293b' }}>AI Analysis Explanation</h3>
             </div>
-            
+
             <p style={{ color: '#334155', lineHeight: 1.7, fontSize: '1.05rem', marginBottom: '1.5rem' }}>
               <span style={{ fontWeight: 600 }}>{generateRiskExplanation(alert)}</span>
             </p>
@@ -168,10 +199,10 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
                 </div>
               </div>
               <div style={{ position: 'relative', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                 <div style={{ width: '80%', height: '2px', backgroundColor: '#f1f5f9' }}></div>
-                 <div style={{ position: 'absolute', left: '20%', top: '40%', width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f97316' }}></div>
-                 <div style={{ position: 'absolute', left: '25%', top: '60%', width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f97316' }}></div>
-                 <div style={{ position: 'absolute', left: '70%', top: '20%', width: 10, height: 10, borderRadius: '50%', backgroundColor: '#94a3b8' }}></div>
+                <div style={{ width: '80%', height: '2px', backgroundColor: '#f1f5f9' }}></div>
+                <div style={{ position: 'absolute', left: '20%', top: '40%', width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f97316' }}></div>
+                <div style={{ position: 'absolute', left: '25%', top: '60%', width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f97316' }}></div>
+                <div style={{ position: 'absolute', left: '70%', top: '20%', width: 10, height: 10, borderRadius: '50%', backgroundColor: '#94a3b8' }}></div>
               </div>
             </div>
           </div>
@@ -182,13 +213,13 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
           <div className="card" style={{ padding: '1.5rem', position: 'sticky', top: '1rem' }}>
             <h3 style={{ fontSize: '1rem', marginBottom: '1.5rem' }}>Actions</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => handleAction('review')} 
+              <button
+                className="btn btn-primary"
+                onClick={() => handleAction('review')}
                 disabled={feedbackStatus === 'review' || feedbackStatus === 'loading'}
-                style={{ 
-                  width: '100%', 
-                  backgroundColor: feedbackStatus === 'review' ? '#16a34a' : '#2563eb', 
+                style={{
+                  width: '100%',
+                  backgroundColor: feedbackStatus === 'review' ? '#16a34a' : '#2563eb',
                   boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.4)',
                   padding: '0.875rem',
                   fontSize: '1rem',
@@ -196,27 +227,27 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
                   justifyContent: 'center',
                   gap: '0.5rem',
                   transition: 'all 0.3s ease'
-              }}>
+                }}>
                 {feedbackStatus === 'loading' ? (
-                    <div className="animate-spin" style={{ width: 20, height: 20, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                  <div className="animate-spin" style={{ width: 20, height: 20, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%' }} />
                 ) : feedbackStatus === 'review' ? (
-                    <><CheckCircle size={20} /> Marked Under Review</>
+                  <><CheckCircle size={20} /> Marked Under Review</>
                 ) : (
-                    <><CheckCircle size={20} /> Mark Under Review</>
+                  <><CheckCircle size={20} /> Mark Under Review</>
                 )}
               </button>
-              
-              <button 
-                className="btn btn-outline" 
+
+              <button
+                className="btn btn-outline"
                 onClick={() => handleAction('escalate')}
                 disabled={feedbackStatus === 'escalate'}
                 style={{ width: '100%', padding: '0.75rem', borderColor: feedbackStatus === 'escalate' ? '#f59e0b' : '#e2e8f0', color: feedbackStatus === 'escalate' ? '#f59e0b' : 'inherit' }}
               >
                 {feedbackStatus === 'escalate' ? <><ShieldAlert size={18} /> Escalated</> : <><ExternalLink size={18} /> Escalate to Supervisor</>}
               </button>
-              
-              <button 
-                className="btn btn-outline" 
+
+              <button
+                className="btn btn-outline"
                 onClick={() => handleAction('export')}
                 style={{ width: '100%', padding: '0.75rem' }}
               >
@@ -240,7 +271,7 @@ const InvestigationDetail = ({ alert, onBack, onStatusUpdate }) => {
                   </p>
                 </div>
               </div>
-              <textarea 
+              <textarea
                 style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem', fontSize: '0.875rem', minHeight: '80px', marginBottom: '0.5rem' }}
                 placeholder="Type a note here..."
               />
@@ -285,12 +316,12 @@ const MetricCard = ({ icon, label, value, info, color }) => (
 );
 
 const Tag = ({ label }) => (
-  <span style={{ 
-    padding: '0.4rem 0.8rem', 
-    backgroundColor: '#eff6ff', 
-    color: '#2563eb', 
-    borderRadius: '20px', 
-    fontSize: '0.75rem', 
+  <span style={{
+    padding: '0.4rem 0.8rem',
+    backgroundColor: '#eff6ff',
+    color: '#2563eb',
+    borderRadius: '20px',
+    fontSize: '0.75rem',
     fontWeight: 600,
     border: '1px solid #dbeafe',
     display: 'flex',

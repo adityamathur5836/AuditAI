@@ -15,6 +15,7 @@ database = client.auditai
 
 users_collection = database.get_collection("users")
 alerts_collection = database.get_collection("alerts")
+transactions_collection = database.get_collection("transactions")
 
 # Helpers needed for Pydantic models with MongoDB (Convert ObjectId to str)
 def alert_helper(alert) -> dict:

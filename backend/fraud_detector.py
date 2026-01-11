@@ -111,7 +111,7 @@ class FraudDetector:
             "amount": amount,
             "department_id": dept_id,
             "vendor_id": transaction.get('vendor_id', 'UNKNOWN'),
-            "z_score": z_score,
+            "z_score": float(z_score) if z_score is not None and not pd.isna(z_score) else 0.0,
             "ml_flag": "ANOMALY" if ml_flag == -1 else "NORMAL"
         }
     

@@ -3,9 +3,10 @@ import { ExternalLink, AlertTriangle, Clock, Layers, AlertCircle, ChevronRight }
 
 const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
   const getRiskColor = (score) => {
-    if (score >= 0.8) return '#dc2626';
-    if (score >= 0.6) return '#d97706';
-    return '#059669';
+    if (score >= 0.8) return '#dc2626'; // Critical
+    if (score >= 0.6) return '#ea580c'; // High (Orange)
+    if (score >= 0.4) return '#eab308'; // Medium (Yellow)
+    return '#10b981'; // Low (Green)
   };
 
   const getIcon = (type) => {
@@ -47,12 +48,12 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
                     </div>
                     <span style={{ fontWeight: 700, fontSize: '0.75rem' }}>{alert.type}</span>
                     {isLive && (
-                      <span style={{ 
-                        backgroundColor: '#2563eb', 
-                        color: 'white', 
-                        padding: '2px 6px', 
-                        borderRadius: '4px', 
-                        fontSize: '0.625rem', 
+                      <span style={{
+                        backgroundColor: '#2563eb',
+                        color: 'white',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.625rem',
                         fontWeight: 800,
                         animation: 'pulse 1.5s infinite'
                       }}>NEW</span>
@@ -60,7 +61,7 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
                   </div>
                 </td>
                 <td>
-                  <button 
+                  <button
                     onClick={() => onVendorView(alert.vendor)}
                     style={{ background: 'none', border: 'none', color: '#0f172a', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
                   >
@@ -70,17 +71,17 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
                 </td>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{ 
-                      width: '40px', 
-                      height: '4px', 
-                      backgroundColor: '#f1f5f9', 
+                    <div style={{
+                      width: '40px',
+                      height: '4px',
+                      backgroundColor: '#f1f5f9',
                       borderRadius: '2px',
                       overflow: 'hidden'
                     }}>
-                      <div style={{ 
-                        height: '100%', 
-                        width: `${alert.risk_score * 100}%`, 
-                        backgroundColor: getRiskColor(alert.risk_score) 
+                      <div style={{
+                        height: '100%',
+                        width: `${alert.risk_score * 100}%`,
+                        backgroundColor: getRiskColor(alert.risk_score)
                       }}></div>
                     </div>
                     <span style={{ fontWeight: 700, fontSize: '0.875rem', minWidth: '24px' }}>{(alert.risk_score * 100).toFixed(0)}</span>
@@ -90,17 +91,17 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
                   {alert.explanation.length > 80 ? alert.explanation.substring(0, 80) + '...' : alert.explanation}
                 </td>
                 <td style={{ paddingRight: '1.5rem' }}>
-                  <button 
-                    className="btn btn-primary" 
+                  <button
+                    className="btn btn-primary"
                     onClick={() => onInvestigate(alert)}
-                    style={{ 
-                        padding: '0.5rem 1rem', 
-                        fontSize: '0.75rem', 
-                        backgroundColor: '#2563eb', 
-                        color: 'white',
-                        boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
-                        fontWeight: 600,
-                        border: 'none'
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#2563eb',
+                      color: 'white',
+                      boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                      fontWeight: 600,
+                      border: 'none'
                     }}
                   >
                     Investigate <ChevronRight size={14} />
