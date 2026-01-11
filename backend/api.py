@@ -258,9 +258,8 @@ async def upload_csv(file: UploadFile = File(...)):
             res['explanation'] = narrative_engine.generate_narrative(res, df)
         
         # Store ALL transactions for advanced analytics (Graph/Benford)
-        # Clear old for demo purposes? Let's keep it accumulative but maybe limit?
-        # For this prototype: Clear old to keep graph clean for the specific upload
-        await transactions_collection.delete_many({}) 
+        # [MODIFIED] Store ALL transactions accumulatively (do not clear old history)
+        # await transactions_collection.delete_many({}) 
         if results_list:
             await transactions_collection.insert_many(results_list)
             # MongoDB adds _id in-place. Remove it to avoid JSON serialization error in response

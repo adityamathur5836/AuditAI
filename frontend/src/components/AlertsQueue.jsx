@@ -17,10 +17,20 @@ import {
 
 const AlertsQueue = ({ alerts, onInvestigate }) => {
   const [filterReview, setFilterReview] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
 
   const filteredAlerts = filterReview
     ? alerts.filter(a => a.status === 'review' || a.status === 'escalate') // Assuming mock status or future implementation
     : alerts;
+
+  const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentPageAlerts = filteredAlerts.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePrev = () => setCurrentPage(p => Math.max(1, p - 1));
+  const handleNext = () => setCurrentPage(p => Math.min(totalPages, p + 1));
 
   return (
     <div className="alerts-queue-view">
@@ -72,8 +82,8 @@ const AlertsQueue = ({ alerts, onInvestigate }) => {
             </tr>
           </thead>
           <tbody>
-            {filteredAlerts.length > 0 ? (
-              filteredAlerts.slice(0, 10).map((alert, idx) => (
+            {currentPageAlerts.length > 0 ? (
+              currentPageAlerts.map((alert, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '1.25rem 1.5rem' }}>
                     <span style={{
@@ -110,11 +120,11 @@ const AlertsQueue = ({ alerts, onInvestigate }) => {
                   </td>
                   <td>
                     <p style={{ fontSize: '0.75rem', color: '#475569', maxWidth: '300px', lineHeight: 1.4 }}>
-                      {alert.type === 'OFF_HOURS' ? 'Unusual weekend procurement activity detected.' : 'Transaction exceeds standard threshold for department.'}
+                      {alert.explanation || (alert.type === 'OFF_HOURS' ? 'Unusual weekend procurement activity detected.' : 'Transaction exceeds standard threshold for department.')}
                     </p>
                   </td>
                   <td>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Oct 24, 2023</span>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{alert.created_at ? new Date(alert.created_at).toLocaleDateString() : 'Just now'}</span>
                   </td>
                   <td style={{ paddingRight: '1.5rem' }}>
                     <button
@@ -148,10 +158,26 @@ const AlertsQueue = ({ alerts, onInvestigate }) => {
         </table>
 
         <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-          <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Showing {filteredAlerts.length > 0 ? '1-10' : '0'} of {filteredAlerts.length} alerts</p>
+          <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            Showing {filteredAlerts.length > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + itemsPerPage, filteredAlerts.length)} of {filteredAlerts.length} alerts
+          </p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Previous</button>
-            <button className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Next</button>
+            <button
+              className="btn btn-outline"
+              onClick={handlePrev}
+              disabled={currentPage === 1}
+              style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              Previous
+            </button>
+            <button
+              className="btn btn-outline"
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', opacity: currentPage === totalPages ? 0.5 : 1 }}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
