@@ -266,27 +266,25 @@ async def upload_csv(file: UploadFile = File(...)):
             for r in results_list:
                 r.pop('_id', None)
         
-        # Filter high risk for storage (> 0.5)
+        # [MODIFIED] Store ALL records regardless of score so they appear in Dashboard/History
         alerts_to_store = []
         for r in results_list:
-            if r.get('risk_score', 0) > 0.5:
-                # Format for DB
-                alert = r.copy()
-                # If narrative engine didn't run (fallback), join reasons. 
-                # But it should have run. We keep the rich explanation.
-                if not alert.get('explanation') and isinstance(alert.get('reasons'), list):
-                    alert['explanation'] = ' | '.join(alert['reasons'])
-                
-                # Use transaction timestamp if available, else utcnow
-                if alert.get('timestamp'):
-                    try:
-                        alert['created_at'] = pd.to_datetime(alert['timestamp'])
-                    except:
-                        alert['created_at'] = datetime.utcnow()
-                else:
+            # Format for DB
+            alert = r.copy()
+            # If narrative engine didn't run (fallback), join reasons. 
+            if not alert.get('explanation') and isinstance(alert.get('reasons'), list):
+                alert['explanation'] = ' | '.join(alert['reasons'])
+
+            # Use transaction timestamp if available, else utcnow
+            if alert.get('timestamp'):
+                try:
+                    alert['created_at'] = pd.to_datetime(alert['timestamp'])
+                except:
                     alert['created_at'] = datetime.utcnow()
-                
-                alerts_to_store.append(alert)
+            else:
+                alert['created_at'] = datetime.utcnow()
+            
+            alerts_to_store.append(alert)
         
         if alerts_to_store:
             await alerts_collection.insert_many(alerts_to_store)
