@@ -15,6 +15,7 @@ database = client.auditai
 
 users_collection = database.get_collection("users")
 alerts_collection = database.get_collection("alerts")
+transactions_collection = database.get_collection("transactions")
 
 # Helpers needed for Pydantic models with MongoDB (Convert ObjectId to str)
 def alert_helper(alert) -> dict:
@@ -29,7 +30,9 @@ def alert_helper(alert) -> dict:
         "vendor_id": alert["vendor_id"],
         "timestamp": alert.get("timestamp"),
         "explanation": alert.get("explanation", ""),
-        "ml_flag": alert.get("ml_flag", "NORMAL")
+        "ml_flag": alert.get("ml_flag", "NORMAL"),
+        "status": alert.get("status", "new"),
+        "created_at": alert.get("created_at")
     }
 
 def user_helper(user) -> dict:

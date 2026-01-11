@@ -1,0 +1,33 @@
+transaction_id,timestamp,department_id,vendor_id,vendor_category,project_id,amount,payment_method,approver_id,budget_code
+TX-001,2024-02-10,DEP-1,VEN-1,IT,PRJ-1,2500,UPI,APR-1,BUD-1
+TX-002,2024-02-11,DEP-1,VEN-2,IT,PRJ-1,2800,UPI,APR-1,BUD-1
+TX-003,2024-02-12,DEP-2,VEN-3,Health,PRJ-2,3000,Bank Transfer,APR-2,BUD-2
+TX-004,2024-02-13,DEP-2,VEN-4,Health,PRJ-2,3200,Bank Transfer,APR-2,BUD-2
+
+# Govt Spending Anomaly (High Amount)
+TX-005,2024-03-01,DEP-1,VEN-5,IT,PRJ-1,450000,Bank Transfer,APR-1,BUD-1
+
+# Govt Spending Extreme
+TX-006,2024-03-05,DEP-1,VEN-6,IT,PRJ-1,600000,Bank Transfer,APR-1,BUD-1
+
+# Procurement Anomaly (Same Vendor Repeated)
+TX-007,2024-04-01,DEP-3,VEN-10,Construction,PRJ-5,90000,Cheque,APR-3,BUD-3
+TX-008,2024-04-03,DEP-3,VEN-10,Construction,PRJ-5,95000,Cheque,APR-3,BUD-3
+TX-009,2024-04-05,DEP-3,VEN-10,Construction,PRJ-5,98000,Cheque,APR-3,BUD-3
+
+# Contract Splitting Anomaly
+TX-010,2024-05-01,DEP-4,VEN-15,IT,PRJ-7,85000,Bank Transfer,APR-4,BUD-4
+TX-011,2024-05-03,DEP-4,VEN-15,IT,PRJ-7,87000,Bank Transfer,APR-4,BUD-4
+
+# Welfare / Project Burst
+TX-012,2024-12-27,DEP-5,VEN-20,Education,PRJ-10,120000,Bank Transfer,APR-5,BUD-5
+TX-013,2024-12-28,DEP-5,VEN-20,Education,PRJ-10,125000,Bank Transfer,APR-5,BUD-5
+TX-014,2024-12-29,DEP-5,VEN-20,Education,PRJ-10,130000,Bank Transfer,APR-5,BUD-5
+
+# Normal Rows
+TX-015,2024-06-10,DEP-2,VEN-7,Health,PRJ-3,3500,UPI,APR-2,BUD-2
+TX-016,2024-06-11,DEP-2,VEN-8,Health,PRJ-3,3600,UPI,APR-2,BUD-2
+TX-017,2024-07-10,DEP-3,VEN-9,Construction,PRJ-4,4000,UPI,APR-3,BUD-3
+TX-018,2024-07-12,DEP-4,VEN-11,IT,PRJ-6,4200,UPI,APR-4,BUD-4
+TX-019,2024-08-15,DEP-5,VEN-12,Education,PRJ-8,3800,UPI,APR-5,BUD-5
+TX-020,2024-08-16,DEP-1,VEN-13,IT,PRJ-9,3900,UPI,APR-1,BUD-1

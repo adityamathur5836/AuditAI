@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldAlert, FileText, DollarSign, Settings, Shield, User, UploadCloud, Users } from 'lucide-react';
-import { AlertCircle, Database } from 'lucide-react'; // Added missing imports for AlertCircle and Database
+import { LayoutDashboard, ShieldAlert, FileText, DollarSign, Settings, Shield, User, UploadCloud, Users, AlertCircle, Database, Sparkles } from 'lucide-react';
 
 const Sidebar = ({ currentView, onViewChange }) => {
   const { user } = useAuth(); // Get user from context
@@ -13,6 +12,7 @@ const Sidebar = ({ currentView, onViewChange }) => {
     { icon: Users, id: 'vendors', label: 'Vendors' },
     { icon: AlertCircle, id: 'alerts_queue', label: 'Alerts Queue' },
     { icon: Database, id: 'transactions', label: 'Transactions' },
+    { icon: Sparkles, id: 'chat', label: 'Policy Genius' },
     { icon: Settings, id: 'config', label: 'Configuration' },
   ];
 
@@ -27,19 +27,19 @@ const Sidebar = ({ currentView, onViewChange }) => {
           <p style={{ fontSize: '0.625rem', color: '#64748b', fontWeight: 600 }}>Gov Analytics</p>
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {navItems.map((item) => {
           const isActive = currentView === item.id || (currentView === 'list' && item.id === 'list');
           return (
-            <div 
+            <div
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem', 
-                padding: '0.75rem 1rem', 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 backgroundColor: isActive ? '#3b82f61a' : 'transparent',
@@ -54,7 +54,7 @@ const Sidebar = ({ currentView, onViewChange }) => {
         })}
       </div>
       <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
-        <div style={{ 
+        <div style={{
           backgroundColor: '#ffffff',
           border: '1px solid #e2e8f0',
           borderRadius: '12px',

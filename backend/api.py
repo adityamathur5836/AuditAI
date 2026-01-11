@@ -18,6 +18,7 @@ from fraud_detector import FraudDetector, get_detector
 from database import (
     users_collection, 
     alerts_collection, 
+    transactions_collection,
     alert_helper, 
     user_helper
 )
@@ -28,6 +29,19 @@ from auth import (
     decode_access_token,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+from network_engine import NetworkEngine
+from benford import BenfordAnalyzer
+
+from narrative_engine import NarrativeEngine
+from rag_engine import RagEngine
+
+# Initialize engines
+network_engine = NetworkEngine()
+benford_analyzer = BenfordAnalyzer()
+narrative_engine = NarrativeEngine()
+rag_engine = RagEngine()
+
+
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -211,8 +225,13 @@ async def upload_csv(file: UploadFile = File(...)):
     
     try:
         contents = await file.read()
-        df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')), comment='#', skip_blank_lines=True)
         
+        # Data Cleaning: Ensure amount is numeric and drop invalid rows
+        if 'amount' in df.columns:
+            df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+            df = df.dropna(subset=['amount'])
+            
         required_cols = ['transaction_id', 'amount', 'department_id', 'vendor_id']
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
@@ -228,8 +247,24 @@ async def upload_csv(file: UploadFile = File(...)):
         low_risk = len(results_df[results_df['risk_level'].isin(['LOW', 'MINIMAL'])])
         
         # Prepare for MongoDB
+        # Prepare for MongoDB
         results_df = results_df.sort_values('risk_score', ascending=False)
-        results_list = results_df.to_dict(orient='records')
+        # Use to_json to handle NaNs correctly (converts to null), then load back to dict list
+        results_list = json.loads(results_df.to_json(orient='records'))
+        
+        # [NEW] Generate Narratives (AI Detective)
+        # We pass the original df for context (averages, etc)
+        for res in results_list:
+            res['explanation'] = narrative_engine.generate_narrative(res, df)
+        
+        # Store ALL transactions for advanced analytics (Graph/Benford)
+        # [MODIFIED] Store ALL transactions accumulatively (do not clear old history)
+        # await transactions_collection.delete_many({}) 
+        if results_list:
+            await transactions_collection.insert_many(results_list)
+            # MongoDB adds _id in-place. Remove it to avoid JSON serialization error in response
+            for r in results_list:
+                r.pop('_id', None)
         
         # Filter high risk for storage (> 0.5)
         alerts_to_store = []
@@ -237,7 +272,9 @@ async def upload_csv(file: UploadFile = File(...)):
             if r.get('risk_score', 0) > 0.5:
                 # Format for DB
                 alert = r.copy()
-                if isinstance(alert.get('reasons'), list):
+                # If narrative engine didn't run (fallback), join reasons. 
+                # But it should have run. We keep the rich explanation.
+                if not alert.get('explanation') and isinstance(alert.get('reasons'), list):
                     alert['explanation'] = ' | '.join(alert['reasons'])
                 
                 # Use transaction timestamp if available, else utcnow
@@ -342,6 +379,47 @@ async def get_statistics():
         "model_info": detector.get_model_info()
     }
 
+@app.get("/api/network/graph")
+async def get_network_graph():
+    """Build and return logic for Network Graph visualization"""
+    cursor = transactions_collection.find({})
+    transactions = await cursor.to_list(length=10000)
+    
+    if not transactions:
+        return {"nodes": [], "links": []}
+        
+    network_engine.build_graph(transactions)
+    return network_engine.get_graph_data()
+
+@app.get("/api/stats/benford")
+async def get_benford_stats():
+    """Return Benford's Law analysis for current transactions"""
+    cursor = transactions_collection.find({})
+    transactions = await cursor.to_list(length=10000)
+    
+    if not transactions:
+        return {"valid": False, "error": "No data"}
+        
+    amounts = [t.get('amount', 0) for t in transactions]
+    return benford_analyzer.analyze(amounts)
+
+# ... (existing upload code) ...
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/api/chat")
+async def chat_policy(request: ChatRequest):
+    """
+    RAG Chatbot endpoint.
+    Retrieves policy documents and answers queries.
+    """
+    response = rag_engine.ask(request.message)
+    return {
+        "reply": response["answer"],
+        "sources": response["context"]
+    }
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)

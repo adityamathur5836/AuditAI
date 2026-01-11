@@ -8,14 +8,14 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
   const deptCount = new Set(vendorAlerts.map(a => a.department)).size;
   const avgRisk = vendorAlerts.reduce((sum, a) => sum + a.risk_score, 0) / (vendorAlerts.length || 1);
   console.log(vendorId)
-  
+
   return (
     <div className="vendor-profile fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ 
-            width: '64px', height: '64px', borderRadius: '12px', 
-            backgroundColor: '#fff', border: '1px solid #e2e8f0', 
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '12px',
+            backgroundColor: '#fff', border: '1px solid #e2e8f0',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
           }}>
@@ -54,8 +54,8 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
         <div className="card" style={{ padding: '1.5rem' }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Avg Risk Score</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <p style={{ fontSize: '1.75rem', fontWeight: 800, color: avgRisk > 0.7 ? '#dc2626' : avgRisk > 0.4 ? '#f97316' : '#10b981' }}>
-                {(avgRisk * 100).toFixed(0)}
+            <p style={{ fontSize: '1.75rem', fontWeight: 800, color: avgRisk >= 0.8 ? '#dc2626' : avgRisk >= 0.6 ? '#ea580c' : avgRisk >= 0.4 ? '#eab308' : '#10b981' }}>
+              {(avgRisk * 100).toFixed(0)}
             </p>
             <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>/ 100</span>
           </div>
@@ -72,19 +72,19 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {vendorAlerts.length > 0 ? vendorAlerts.map((alert, i) => (
-                <div key={i} style={{ 
-                    padding: '1rem', 
-                    borderRadius: '8px', 
-                    backgroundColor: '#f8fafc', 
-                    border: '1px solid #f1f5f9', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    transition: 'background-color 0.2s'
+                <div key={i} style={{
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #f1f5f9',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'background-color 0.2s'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ padding: '0.5rem', borderRadius: '50%', backgroundColor: alert.risk_score > 0.7 ? '#fee2e2' : '#ffedd5' }}>
-                        <Activity size={16} color={alert.risk_score > 0.7 ? '#dc2626' : '#c2410c'} />
+                      <Activity size={16} color={alert.risk_score > 0.7 ? '#dc2626' : '#c2410c'} />
                     </div>
                     <div>
                       <p style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a' }}>{alert.invoice_id || 'INV-UNKNOWN'} - {alert.category || 'General'}</p>
@@ -93,15 +93,15 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <p style={{ fontWeight: 700, color: '#0f172a' }}>₹{alert.amount?.toLocaleString()}</p>
-                    <span style={{ 
-                        fontSize: '0.625rem', 
-                        padding: '0.125rem 0.375rem', 
-                        borderRadius: '4px',
-                        fontWeight: 700,
-                        backgroundColor: alert.risk_score > 0.7 ? '#fee2e2' : '#ffedd5',
-                        color: alert.risk_score > 0.7 ? '#dc2626' : '#c2410c'
+                    <span style={{
+                      fontSize: '0.625rem',
+                      padding: '0.125rem 0.375rem',
+                      borderRadius: '4px',
+                      fontWeight: 700,
+                      backgroundColor: alert.risk_score > 0.7 ? '#fee2e2' : '#ffedd5',
+                      color: alert.risk_score > 0.7 ? '#dc2626' : '#c2410c'
                     }}>
-                        RISK: {(alert.risk_score * 100).toFixed(0)}
+                      RISK: {(alert.risk_score * 100).toFixed(0)}
                     </span>
                   </div>
                 </div>
