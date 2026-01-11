@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldAlert, FileText, DollarSign, Settings, Shield, User, UploadCloud, Users, AlertCircle, Database, Sparkles } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, FileText, DollarSign, Settings, Shield, User, UploadCloud, Users, AlertCircle, Database, Sparkles, Building2 } from 'lucide-react';
 
 const Sidebar = ({ currentView, onViewChange }) => {
   const { user } = useAuth(); // Get user from context
@@ -11,7 +11,7 @@ const Sidebar = ({ currentView, onViewChange }) => {
     { icon: FileText, id: 'analytics', label: 'Analytics' },
     { icon: Users, id: 'vendors', label: 'Vendors' },
     { icon: AlertCircle, id: 'alerts_queue', label: 'Alerts Queue' },
-    { icon: Database, id: 'transactions', label: 'Transactions' },
+    { icon: Building2, id: 'departments', label: 'Departmental Oversight' },
     { icon: Sparkles, id: 'chat', label: 'Policy Genius' },
     { icon: Settings, id: 'config', label: 'Configuration' },
   ];

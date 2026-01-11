@@ -1,170 +1,155 @@
-import React, { useState, useEffect } from 'react';
-import { Database, Cpu, Activity, Globe, CheckCircle2, Server, Zap, ArrowRight } from 'lucide-react';
-import { checkHealth } from '../api';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, ShieldAlert, CheckCircle, Activity, ArrowUpRight } from 'lucide-react';
+import { fetchLatestAlerts } from '../api';
 
 const LiveFlowMonitor = () => {
-    const [status, setStatus] = useState({ stage: 'Checking', detail: 'Initializing System Core...', progress: 0 });
-    const [activeStage, setActiveStage] = useState(0);
+    const [feeds, setFeeds] = useState([]);
+    const [lastId, setLastId] = useState(null);
+    const scrollRef = useRef(null);
 
     useEffect(() => {
-        const fetchStatus = async () => {
+        const pollData = async () => {
             try {
-                const health = await checkHealth();
-                if (health.status === 'healthy') {
-                    if (status.stage === 'Checking' || status.stage === 'Offline') {
-                        setStatus(prev => ({ ...prev, stage: 'System Online', detail: 'pipeline_active: true' }));
+                // Fetch latest alerts (cache-busted)
+                const data = await fetchLatestAlerts(20);
+                if (data && Array.isArray(data)) {
+                    // API returns array directly or { alerts: [] }? 
+                    // fetchLatestAlerts returns data.alerts || []
+                    const alerts = data;
+
+                    // Sort by created_at desc (frontend insurance)
+                    const sorted = alerts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                    // Update feed if we have new items
+                    if (sorted.length > 0) {
+                        const newTop = sorted[0];
+                        if (newTop.transaction_id !== lastId) {
+                            setFeeds(sorted);
+                            setLastId(newTop.transaction_id);
+                        }
                     }
-                } else {
-                    setStatus({ stage: 'Offline', detail: 'ERR_CONNECTION_REFUSED', progress: 0 });
                 }
-            } catch (err) {
-                setStatus({ stage: 'Offline', detail: 'ERR_BACKEND_UNREACHABLE', progress: 0 });
+            } catch (error) {
+                console.error("Feed poll error:", error);
             }
         };
 
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 5000);
+        pollData(); // Initial
+        const interval = setInterval(pollData, 2000); // Poll every 2s
         return () => clearInterval(interval);
-    }, []);
+    }, [lastId]);
 
-    // Animation Cycle
-    useEffect(() => {
-        if (status.stage === 'Offline') return;
-
-        const interval = setInterval(() => {
-            setActiveStage(prev => (prev + 1) % 4);
-
-            const stages = ['Ingesting Data Streams', 'Processing Anomalies', 'Risk Scoring Engine', 'Dashboard Sync'];
-            const details = [
-                'recv_bytes: ' + Math.floor(Math.random() * 5000) + 'KB',
-                'analyzing_batch_id: #' + Math.floor(Math.random() * 99999),
-                'calculating_risk_vectors...',
-                'refreshing_ui_state...'
-            ];
-
-            setStatus(prev => ({
-                ...prev,
-                stage: stages[activeStage],
-                detail: details[activeStage]
-            }));
-
-        }, 2000);
-
-        return () => clearInterval(interval);
-    }, [status.stage]);
-
-    const stages = [
-        { label: 'Ingest', icon: <Database size={16} /> },
-        { label: 'Process', icon: <Cpu size={16} /> },
-        { label: 'Analyze', icon: <Activity size={16} /> },
-        { label: 'Sync', icon: <Globe size={16} /> }
-    ];
+    // Auto-scroll effect or layout? User asked for "scrollable live notification system".
+    // We'll leave it scrollable by user but maybe animate new items.
 
     return (
         <div className="card" style={{
             background: '#ffffff',
             border: '1px solid #e2e8f0',
-            padding: '1.5rem',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)'
+            padding: '1',
+            height: '320px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
         }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ padding: '0.5rem', borderRadius: '8px', backgroundColor: '#eff6ff', border: '1px solid #dbeafe' }}>
-                        <Server size={18} color="#2563eb" />
-                    </div>
-                    <div>
-                        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', letterSpacing: '0.5px' }}>LIVE PIPELINE</h3>
-                        <p style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace' }}>STATUS: {status.stage === 'Offline' ? 'DISCONNECTED' : 'OPERATIONAL'}</p>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: status.stage === 'Offline' ? '#ef4444' : '#10b981', boxShadow: status.stage !== 'Offline' ? '0 0 8px #86efac' : 'none' }}></div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: status.stage === 'Offline' ? '#ef4444' : '#16a34a' }}>
-                        {status.stage === 'Offline' ? 'OFFLINE' : 'LIVE'}
-                    </span>
-                </div>
-            </div>
-
-            {/* Pipeline Visualization */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', padding: '0 1rem', marginBottom: '2rem' }}>
-
-                {/* Connection Line Background */}
-                <div style={{ position: 'absolute', top: '50%', left: '2rem', right: '2rem', height: '2px', backgroundColor: '#f1f5f9', zIndex: 0 }}></div>
-
-                {/* Animated Connection Line */}
-                {status.stage !== 'Offline' && (
-                    <div style={{
-                        position: 'absolute', top: '50%', left: '2rem', right: '2rem', height: '2px',
-                        background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
-                        zIndex: 0,
-                        opacity: 1,
-                        width: '24%', // Distance between nodes roughly
-                        transform: `translateX(${activeStage * 100}%)`, // Move by one full segment width
-                        left: '13%', // Starting offset (center of first node roughly)
-                        transition: 'transform 0.5s ease-in-out'
-                    }}></div>
-                )}
-
-                {stages.map((stage, idx) => {
-                    const isActive = activeStage === idx;
-                    const isPassed = idx < activeStage || (activeStage === 0 && idx === 3);
-
-                    return (
-                        <div key={idx} style={{ position: 'relative', zIndex: 1, backgroundColor: '#ffffff', padding: '0 0.5rem' }}>
-                            <div style={{
-                                width: 40, height: 40, borderRadius: '50%',
-                                backgroundColor: isActive ? '#eff6ff' : (isPassed ? '#f0fdf4' : '#f8fafc'),
-                                border: `1px solid ${isActive ? '#3b82f6' : (isPassed ? '#86efac' : '#e2e8f0')}`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isActive ? '#2563eb' : (isPassed ? '#16a34a' : '#94a3b8'),
-                                boxShadow: isActive ? '0 0 0 4px #eff6ff' : 'none',
-                                transition: 'all 0.3s ease',
-                                margin: '0 auto 0.5rem'
-                            }}>
-                                {isPassed ? <CheckCircle2 size={18} /> : stage.icon}
-                            </div>
-                            <p style={{
-                                fontSize: '0.7rem',
-                                fontWeight: 700,
-                                color: isActive ? '#0f172a' : '#64748b',
-                                textAlign: 'center',
-                                transition: 'color 0.3s ease'
-                            }}>{stage.label}</p>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Terminal Log Footer */}
             <div style={{
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                padding: '0.75rem',
-                fontFamily: 'monospace',
-                fontSize: '0.7rem'
+                padding: '1rem 1.5rem',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#fff'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Zap size={10} color="#eab308" />
-                    <span style={{ color: '#2563eb', fontWeight: 600 }}>system@audit-ai:~$</span>
-                    <span style={{ color: '#475569' }}>{status.detail}</span>
-                    <span className="cursor-blink" style={{ width: 6, height: 12, backgroundColor: '#cbd5e1' }}></span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Bell size={18} color="#0f172a" />
+                        <span style={{
+                            position: 'absolute', top: -2, right: -1,
+                            width: 8, height: 8, backgroundColor: '#ef4444',
+                            borderRadius: '50%', border: '2px solid white'
+                        }} />
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Live Transaction Feed</span>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ position: 'relative', display: 'flex', height: 8, width: 8 }}>
+                        <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', backgroundColor: '#22c55e', opacity: 0.75, animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite' }}></span>
+                        <span style={{ position: 'relative', display: 'inline-flex', height: 8, width: 8, borderRadius: '50%', backgroundColor: '#15803d' }}></span>
+                    </span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#15803d' }}>RECEIVING DATA</span>
+                </div>
+            </div>
+
+            {/* Scrollable List */}
+            <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '0.5rem 1rem'
+            }} ref={scrollRef}>
+                {feeds.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', gap: '0.5rem' }}>
+                        <Activity size={24} />
+                        <span style={{ fontSize: '0.8rem' }}>Waiting for incoming stream...</span>
+                    </div>
+                ) : (
+                    feeds.map((item, idx) => (
+                        <div key={idx} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.75rem',
+                            borderBottom: '1px solid #f8fafc',
+                            animation: 'fadeIn 0.5s ease-in'
+                        }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                <div style={{
+                                    width: 32, height: 32, borderRadius: '8px',
+                                    backgroundColor: item.risk_score > 0.6 ? '#fef2f2' : item.risk_score > 0.4 ? '#fffbeb' : '#f0fdf4',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0
+                                }}>
+                                    {item.risk_score > 0.8 ? <ShieldAlert size={16} color="#dc2626" /> :
+                                        item.risk_score > 0.6 ? <Activity size={16} color="#ea580c" /> :
+                                            <CheckCircle size={16} color="#16a34a" />}
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{item.vendor_id || item.vendor}</p>
+                                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                        {item.risk_score > 0.6 ? 'Suspicious Activity Detected' : 'Routine Transaction'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>₹{item.amount.toLocaleString()}</p>
+                                <p style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{new Date(item.created_at).toLocaleTimeString()}</p>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             <style>
                 {`
-                .cursor-blink {
-                    animation: blink 1s step-end infinite;
+                @keyframes ping {
+                    75%, 100% { transform: scale(2); opacity: 0; }
                 }
-                @keyframes blink {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0; }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
-            `}
+                /* Custom Scrollbar */
+                div::-webkit-scrollbar {
+                    width: 4px;
+                }
+                div::-webkit-scrollbar-track {
+                    background: #f1f5f9;
+                }
+                div::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 4px;
+                }
+                `}
             </style>
         </div>
     );

@@ -1,13 +1,15 @@
 import React from 'react';
 import { ArrowLeft, Building2, Globe, History, ShieldAlert, ShieldCheck, MapPin, Share2, Activity } from 'lucide-react';
 
-const VendorProfile = ({ vendorId, alerts, onBack }) => {
+const VendorProfile = ({ vendorId, entities = [], alerts, onBack }) => {
+  // Find entity metadata (name, etc.)
+  const entity = entities.find(e => e.id === vendorId) || { name: vendorId };
+
   // Mock vendor details based on alerts data
-  const vendorAlerts = alerts.filter(a => a.vendor === vendorId);
-  const totalFlagged = vendorAlerts.reduce((sum, a) => sum + (a.amount || 0), 0);
+  const vendorAlerts = alerts.filter(a => a.vendor_id === vendorId);
+  const totalFlagged = entity.total_amount || vendorAlerts.reduce((sum, a) => sum + (a.amount || 0), 0);
   const deptCount = new Set(vendorAlerts.map(a => a.department)).size;
   const avgRisk = vendorAlerts.reduce((sum, a) => sum + a.risk_score, 0) / (vendorAlerts.length || 1);
-  console.log(vendorId)
 
   return (
     <div className="vendor-profile fade-in">
@@ -22,9 +24,9 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
             <Building2 size={32} color="#2563eb" />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem' }}>{vendorId}</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem' }}>{entity.name}</h2>
             <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#64748b' }}>
-              <MapPin size={14} /> Registered Entity | ID: #VEN-{Math.floor(Math.random() * 10000)}
+              <MapPin size={14} /> Registered Entity | ID: #{vendorId?.replace('VEND-', 'ENT-') || 'UNKNOWN'}
             </p>
           </div>
         </div>
@@ -62,7 +64,7 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '1.5rem' }}>
         <div className="left-column">
           {/* History Panel */}
           <div className="card">
@@ -108,30 +110,6 @@ const VendorProfile = ({ vendorId, alerts, onBack }) => {
               )) : (
                 <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No alerts found for this vendor.</div>
               )}
-            </div>
-          </div>
-        </div>
-
-        <div className="right-column">
-          {/* Alias Intelligence */}
-          <div className="card" style={{ borderTop: '4px solid #2563eb' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <Globe size={20} color="#2563eb" />
-              <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Alias Intelligence</h3>
-            </div>
-            <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#64748b', lineHeight: '1.5' }}>
-              AuditAI has linked the following names to this entity based on Tax ID signatures.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '0.75rem', color: '#1e40af', fontWeight: 600 }}>
-                {vendorId} (Primary)
-              </span>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#64748b' }}>
-                {vendorId} Pvt Ltd
-              </span>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#64748b' }}>
-                {(vendorId || 'Unknown').split(' ')[0]} Services
-              </span>
             </div>
           </div>
         </div>

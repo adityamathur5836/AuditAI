@@ -98,6 +98,12 @@ class FraudDetector:
             if is_off_hours:
                 risk_score += 15
                 reasons.append(off_hours_reason)
+
+        # 5. Round Number Check (Human Bias Heuristic)
+        # Fraudulent amounts are often perfectly round numbers (e.g., 50000.00)
+        if amount > 1000 and amount % 1000 == 0:
+            risk_score += 10
+            reasons.append("Suspiciously round amount (multiple of ₹1,000)")
         
         # Normalize to 0-1 scale
         normalized_score = min(risk_score / 100, 1.0)

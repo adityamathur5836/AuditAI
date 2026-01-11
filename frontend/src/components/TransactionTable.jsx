@@ -1,7 +1,7 @@
 import React from 'react';
 import { ExternalLink, AlertTriangle, Clock, Layers, AlertCircle, ChevronRight } from 'lucide-react';
 
-const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
+const TransactionTable = ({ alerts, onInvestigate, onVendorView, limit, onViewAll }) => {
   const getRiskColor = (score) => {
     if (score >= 0.8) return '#dc2626'; // Critical
     if (score >= 0.6) return '#ea580c'; // High (Orange)
@@ -17,6 +17,8 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
       default: return <AlertCircle size={16} />;
     }
   };
+
+  const displayedAlerts = limit ? alerts.slice(0, limit) : alerts;
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}>
@@ -37,7 +39,7 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
           </tr>
         </thead>
         <tbody>
-          {alerts.map((alert, index) => {
+          {displayedAlerts.map((alert, index) => {
             const isLive = alert.transaction_id.startsWith('RT-');
             return (
               <tr key={index} style={{ backgroundColor: isLive ? '#eff6ff' : 'white' }}>
@@ -112,6 +114,26 @@ const TransactionTable = ({ alerts, onInvestigate, onVendorView }) => {
           })}
         </tbody>
       </table>
+      {limit && alerts.length > limit && (
+        <div style={{ padding: '1rem', borderTop: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#fcfcfc' }}>
+          <button
+            onClick={onViewAll}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#2563eb',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+          >
+            See All {alerts.length} Transactions <ExternalLink size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
