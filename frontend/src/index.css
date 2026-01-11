@@ -36,7 +36,8 @@ body {
 
 .sidebar {
   width: 260px;
-  background-color: var(--bg-sidebar);
+  background-color: #f8fafc;
+  background-image: linear-gradient(to bottom, #f1f5f9, #f8fafc);
   border-right: 1px solid var(--border-color);
   padding: 2rem 1.25rem;
   display: flex;
@@ -51,11 +52,19 @@ body {
 
 .card {
   background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  /* More modern */
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  /* Softer shadow */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  /* transform: translateY(-1px);  Disabled to avoid messy layout shifts */
 }
 
 .badge {

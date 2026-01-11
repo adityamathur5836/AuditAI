@@ -57,6 +57,8 @@ Current Status: ${alert.status || 'Active'}
     setFeedbackStatus('loading');
     setTimeout(() => {
       setFeedbackStatus(action);
+      // Feedback Loop Confirmation (USP)
+      alert("✅ Feedback Received: Use feedback to re-train Risk Model weightings.");
       if (onStatusUpdate && alert) {
         onStatusUpdate(alert.transaction_id, action);
       }

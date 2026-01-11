@@ -2,46 +2,33 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import RiskSummary from './components/RiskSummary';
 import TransactionTable from './components/TransactionTable';
+import EntityRiskTable from './components/EntityRiskTable';
 import InvestigationDetail from './components/InvestigationDetail';
 import VendorProfile from './components/VendorProfile';
 import LiveFlowMonitor from './components/LiveFlowMonitor';
 import Analytics from './components/Analytics';
 import AlertsQueue from './components/AlertsQueue';
-import TransactionsPage from './components/TransactionsPage';
+// import TransactionsPage from './components/TransactionsPage'; // Deprecated
+import DepartmentsPage from './components/DepartmentsPage';
 import Configuration from './components/Configuration';
 import UploadAnalyze from './components/UploadAnalyze';
 import VendorsPage from './components/VendorsPage';
 import Login from './components/Login';
 import PolicyChat from './components/PolicyChat';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { User, ChevronRight, Bell, Search, Filter, Calendar, AlertCircle, Activity, Settings, Database, Wifi, WifiOff, LogOut } from 'lucide-react';
-import { fetchAlerts, fetchStats, checkHealth, updateAlertStatus as apiUpdateStatus } from './api';
-
-// ... (in App component)
-
-const updateAlertStatus = async (transactionId, newStatus) => {
-  // Optimistic update
-  setAlerts(prevAlerts => prevAlerts.map(alert =>
-    alert.transaction_id === transactionId ? { ...alert, status: newStatus } : alert
-  ));
-
-  // API Call
-  try {
-    await apiUpdateStatus(transactionId, newStatus);
-  } catch (err) {
-    console.error("Failed to persist status update", err);
-    // Revert on failure could be added here
-  }
-};
+import { User, ChevronRight, Bell, Search, Filter, Calendar, AlertCircle, Activity, Settings, Database, Wifi, WifiOff, LogOut, ShieldAlert, Building2 } from 'lucide-react';
+import { fetchAlerts, fetchStats, checkHealth, updateAlertStatus as apiUpdateStatus, fetchEntities } from './api';
 
 const AuditDashboard = () => {
   const { user, logout } = useAuth();
   const [alerts, setAlerts] = useState([]);
+  const [entities, setEntities] = useState([]);
   const [stats, setStats] = useState(null);
   const [apiStatus, setApiStatus] = useState('checking');
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [view, setView] = useState('list');
+  const [dateFilter, setDateFilter] = useState(null); // null = All Time, 30 = Last 30 Days
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,17 +37,21 @@ const AuditDashboard = () => {
       setApiStatus(health.status === 'healthy' ? 'connected' : 'offline');
 
       if (health.status === 'healthy') {
-        const alertsData = await fetchAlerts(1000, 0.0);
+        const [alertsData, statsData, entitiesData] = await Promise.all([
+          fetchAlerts(1000, 0.0),
+          fetchStats(),
+          fetchEntities(dateFilter)
+        ]);
         setAlerts(alertsData);
-        const statsData = await fetchStats();
         setStats(statsData);
+        setEntities(entitiesData);
       }
     };
 
     loadData();
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dateFilter]);
 
   if (!user) {
     return <Login />;
@@ -71,8 +62,9 @@ const AuditDashboard = () => {
     setView('detail');
   };
 
-  const handleVendorView = (vendor) => {
-    setSelectedVendor(vendor);
+  const handleVendorView = (vendorName) => {
+    // Navigate to vendor profile. VendorName from entity table might be the ID.
+    setSelectedVendor(vendorName);
     setView('vendor');
   };
 
@@ -110,6 +102,10 @@ const AuditDashboard = () => {
 
   const chartBars = getChartData();
 
+  // Calculate Entity-based KPIs
+  const criticalEntities = entities.filter(e => e.verdict === 'CRITICAL').length;
+  const highRiskEntities = entities.filter(e => e.verdict === 'HIGH').length;
+
   return (
     <div className="dashboard-container" style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar currentView={view} onViewChange={setView} />
@@ -131,13 +127,25 @@ const AuditDashboard = () => {
                           : view === 'upload' ? 'Upload & Analyze'
                             : 'Dashboard'}
               </h1>
-              <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Monitoring fiscal irregularities across all zones.</p>
+              <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Monitoring fiscal irregularities across all zones (Entity-First View).</p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', marginBottom: 0 }}>
                 <Calendar size={16} color="#64748b" />
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Last 30 Days</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <input
+                    type="date"
+                    onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
+                    style={{ border: 'none', background: 'transparent', fontSize: '0.75rem', fontWeight: 600, outline: 'none', color: '#64748b' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>-</span>
+                  <input
+                    type="date"
+                    onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
+                    style={{ border: 'none', background: 'transparent', fontSize: '0.75rem', fontWeight: 600, outline: 'none', color: '#64748b' }}
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
@@ -179,12 +187,12 @@ const AuditDashboard = () => {
               )}
             </div>
 
-            {/* KPI Cards */}
+            {/* KPI Cards - REFACTORED FOR ENTITIES */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-              <KPICard label="Total Alerts" value={stats?.total_alerts || alerts.length} change={apiStatus === 'connected' ? 'Live' : ''} isPositive sub="from ML analysis" icon={<Database size={20} color="#2563eb" />} />
-              <KPICard label="Critical Alerts" value={stats?.critical_alerts || alerts.filter(a => a.risk_score >= 0.8).length} change="" sub="immediate review" icon={<AlertCircle size={20} color="#dc2626" />} color="#dc2626" />
-              <KPICard label="High-Risk Alerts" value={stats?.high_risk_alerts || alerts.filter(a => a.risk_score >= 0.6 && a.risk_score < 0.8).length} change="" sub="needs attention" icon={<AlertCircle size={20} color="#f97316" />} color="#f97316" />
-              <KPICard label="Est. Flagged Amount" value={`₹ ${((stats?.total_flagged_amount || alerts.reduce((sum, a) => sum + (a.amount || 0), 0)) / 10000000).toFixed(1)} Cr`} change="" sub="under review" icon={<Activity size={20} color="#2563eb" />} />
+              <KPICard label="Critical Entities" value={criticalEntities} change={apiStatus === 'connected' ? 'Live' : ''} isPositive={false} sub="immediate audit required" icon={<ShieldAlert size={20} color="#dc2626" />} color="#dc2626" />
+              <KPICard label="High-Risk Vendors" value={highRiskEntities} change="+2" sub="watch list" icon={<Building2 size={20} color="#f97316" />} color="#f97316" />
+              <KPICard label="Transactions Flagged" value={stats?.total_alerts || alerts.length} change="" sub="total anomalies" icon={<AlertCircle size={20} color="#eab308" />} />
+              <KPICard label="Est. Risk Exposure" value={`₹ ${((stats?.total_flagged_amount || 0) / 10000000).toFixed(1)} Cr`} change="" sub="fiscal impact" icon={<Activity size={20} color="#2563eb" />} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
@@ -236,9 +244,8 @@ const AuditDashboard = () => {
             </div>
 
             <div style={{ marginTop: '2rem' }}>
-              <TransactionTable
-                alerts={alerts}
-                onInvestigate={handleInvestigate}
+              <EntityRiskTable
+                entities={entities}
                 onVendorView={handleVendorView}
               />
             </div>
@@ -247,12 +254,17 @@ const AuditDashboard = () => {
           <Analytics onViewChange={setView} />
         ) : view === 'alerts_queue' ? (
           <AlertsQueue alerts={alerts} onInvestigate={handleInvestigate} />
-        ) : view === 'transactions' ? (
-          <TransactionsPage alerts={alerts} onInvestigate={handleInvestigate} onVendorView={handleVendorView} />
+        ) : view === 'departments' ? (
+          <DepartmentsPage />
         ) : view === 'upload' ? (
           <UploadAnalyze />
         ) : view === 'vendors' ? (
-          <VendorsPage alerts={alerts} onVendorClick={handleVendorView} />
+          <VendorsPage
+            entities={entities}
+            onVendorClick={handleVendorView}
+            dateFilter={dateFilter}
+            onFilterChange={setDateFilter}
+          />
         ) : view === 'config' ? (
           <Configuration />
         ) : view === 'chat' ? (
@@ -260,7 +272,7 @@ const AuditDashboard = () => {
         ) : view === 'detail' ? (
           <InvestigationDetail alert={selectedAlert} onBack={handleBack} onStatusUpdate={updateAlertStatus} />
         ) : view === 'vendor' ? (
-          <VendorProfile vendorId={selectedVendor} alerts={alerts} onBack={handleBack} />
+          <VendorProfile vendorId={selectedVendor} entities={entities} alerts={alerts} onBack={handleBack} />
         ) : (
           <div style={{ padding: '4rem', textAlign: 'center' }}>
             <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>

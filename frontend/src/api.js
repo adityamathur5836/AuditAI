@@ -57,9 +57,9 @@ export async function fetchCurrentUser() {
 /**
  * Fetch all fraud alerts from the API
  */
-export async function fetchAlerts(limit = 1000, minScore = 0.0) {
+export async function fetchAlerts(limit = 1000, minScore = 0.0, sortBy = 'risk_score') {
     try {
-        const response = await fetch(`${API_BASE}/api/alerts?limit=${limit}&min_score=${minScore}`, {
+        const response = await fetch(`${API_BASE}/api/alerts?limit=${limit}&min_score=${minScore}&sort_by=${sortBy}`, {
             headers: getAuthHeaders()
         });
         if (!response.ok) throw new Error('Failed to fetch alerts');
@@ -67,6 +67,25 @@ export async function fetchAlerts(limit = 1000, minScore = 0.0) {
         return data.alerts || [];
     } catch (error) {
         console.error('Error fetching alerts:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch latest alerts (sorted by time) - Dedicated function to avoid caching issues
+ */
+export async function fetchLatestAlerts(limit = 20) {
+    try {
+        // Explicitly force sort_by=latest
+        const url = `${API_BASE}/api/alerts?limit=${limit}&min_score=0.0&sort_by=latest&_t=${Date.now()}`;
+        const response = await fetch(url, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to fetch latest alerts');
+        const data = await response.json();
+        return data.alerts || [];
+    } catch (error) {
+        console.error('Error fetching latest alerts:', error);
         return [];
     }
 }
@@ -190,10 +209,18 @@ export default {
 /**
  * Fetch Network Graph Data
  */
+/**
+ * Fetch Network Graph Data
+ */
 export async function fetchNetworkGraph() {
-    const response = await fetch(`${API_BASE}/api/network/graph`, { headers: getAuthHeaders() });
-    if (!response.ok) return null;
-    return await response.json();
+    try {
+        const response = await fetch(`${API_BASE}/api/network/graph`, { headers: getAuthHeaders() });
+        if (!response.ok) return { nodes: [], links: [] };
+        return await response.json();
+    } catch (e) {
+        console.error("Graph fetch error", e);
+        return { nodes: [], links: [] };
+    }
 }
 
 /**
@@ -203,4 +230,44 @@ export async function fetchBenfordStats() {
     const response = await fetch(`${API_BASE}/api/stats/benford`, { headers: getAuthHeaders() });
     if (!response.ok) return null;
     return await response.json();
+}
+
+/**
+ * Fetch Entity Risk Registry (Aggregated by Vendor)
+ */
+// Supports 'days' (int) OR { start, end } (object)
+export async function fetchEntities(filter = null) {
+    try {
+        let url = `${API_BASE}/api/entities`;
+
+        if (typeof filter === 'number') {
+            url += `?days=${filter}`;
+        } else if (filter && typeof filter === 'object') {
+            const params = new URLSearchParams();
+            if (filter.start) params.append('start_date', filter.start);
+            if (filter.end) params.append('end_date', filter.end);
+            url += `?${params.toString()}`;
+        }
+
+        const response = await fetch(url, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Failed to fetch entities');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching entities:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch Departmental Oversight Data
+ */
+export async function fetchDepartments() {
+    try {
+        const response = await fetch(`${API_BASE}/api/departments`, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Failed to fetch departments');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching departments:', error);
+        return [];
+    }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, FileText, AlertTriangle, CheckCircle, XCircle, Loader2, Download, Filter, RefreshCw } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, CheckCircle, XCircle, Loader2, Download, Filter, RefreshCw, Info } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -45,24 +45,24 @@ const UploadAnalyze = () => {
 
   const analyzeFile = async () => {
     if (!file) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.detail || 'Analysis failed');
       }
-      
+
       const data = await response.json();
       setResults(data);
     } catch (err) {
@@ -127,7 +127,7 @@ const UploadAnalyze = () => {
 
       {/* Upload Zone */}
       {!results && (
-        <div 
+        <div
           className="card"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -142,10 +142,10 @@ const UploadAnalyze = () => {
           }}
         >
           <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ 
-              width: 80, 
-              height: 80, 
-              borderRadius: '50%', 
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
               backgroundColor: '#f1f5f9',
               display: 'flex',
               alignItems: 'center',
@@ -155,14 +155,14 @@ const UploadAnalyze = () => {
               <Upload size={32} color="#64748b" />
             </div>
           </div>
-          
+
           <h3 style={{ marginBottom: '0.5rem', fontWeight: 600 }}>
             {file ? file.name : 'Drop your CSV file here'}
           </h3>
           <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
             {file ? `${(file.size / 1024).toFixed(1)} KB` : 'or click to browse'}
           </p>
-          
+
           <input
             type="file"
             accept=".csv"
@@ -170,9 +170,9 @@ const UploadAnalyze = () => {
             style={{ display: 'none' }}
             id="file-upload"
           />
-          
+
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <label 
+            <label
               htmlFor="file-upload"
               className="btn btn-secondary"
               style={{ cursor: 'pointer' }}
@@ -180,9 +180,9 @@ const UploadAnalyze = () => {
               <FileText size={16} style={{ marginRight: '0.5rem' }} />
               Browse Files
             </label>
-            
+
             {file && (
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={analyzeFile}
                 disabled={loading}
@@ -201,7 +201,7 @@ const UploadAnalyze = () => {
               </button>
             )}
           </div>
-          
+
           <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '1.5rem' }}>
             Required columns: transaction_id, amount, department_id, vendor_id
           </p>
@@ -210,8 +210,8 @@ const UploadAnalyze = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="card" style={{ 
-          backgroundColor: 'rgba(220, 38, 38, 0.1)', 
+        <div className="card" style={{
+          backgroundColor: 'rgba(220, 38, 38, 0.1)',
           border: '1px solid #dc2626',
           marginTop: '1rem',
           display: 'flex',
@@ -228,32 +228,33 @@ const UploadAnalyze = () => {
         <>
           {/* Summary Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-            <SummaryCard 
-              label="Total Analyzed" 
-              value={results.total_transactions} 
-              color="#0f172a" 
+            <SummaryCard
+              label="Total Analyzed"
+              value={results.total_transactions}
+              color="#0f172a"
             />
-            <SummaryCard 
-              label="Fraudulent" 
-              value={results.fraudulent_transactions} 
-              color="#dc2626" 
+            <SummaryCard
+              label="Fraudulent"
+              value={results.fraudulent_transactions}
+              color="#dc2626"
               icon={<XCircle size={16} />}
             />
-            <SummaryCard 
-              label="High Risk" 
-              value={results.high_risk_count} 
-              color="#f97316" 
+            <SummaryCard
+              label="High Risk"
+              value={results.high_risk_count}
+              color="#f97316"
               icon={<AlertTriangle size={16} />}
             />
-            <SummaryCard 
-              label="Medium Risk" 
-              value={results.medium_risk_count} 
-              color="#eab308" 
+            <SummaryCard
+              label="Medium Risk"
+              value={results.medium_risk_count}
+              color="#eab308"
+              icon={<Info size={16} />}
             />
-            <SummaryCard 
-              label="Low Risk" 
-              value={results.low_risk_count} 
-              color="#22c55e" 
+            <SummaryCard
+              label="Low Risk"
+              value={results.low_risk_count}
+              color="#22c55e"
               icon={<CheckCircle size={16} />}
             />
           </div>
@@ -278,15 +279,15 @@ const UploadAnalyze = () => {
                 </button>
               </div>
             </div>
-            <div style={{ 
-              height: 8, 
-              backgroundColor: '#f1f5f9', 
-              borderRadius: 4, 
+            <div style={{
+              height: 8,
+              backgroundColor: '#f1f5f9',
+              borderRadius: 4,
               marginTop: '1rem',
               overflow: 'hidden'
             }}>
-              <div style={{ 
-                height: '100%', 
+              <div style={{
+                height: '100%',
                 width: `${results.detection_rate}%`,
                 backgroundColor: results.detection_rate > 30 ? '#dc2626' : '#f97316',
                 borderRadius: 4,
@@ -301,7 +302,7 @@ const UploadAnalyze = () => {
               <h3 style={{ fontSize: '1rem' }}>Detection Results</h3>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Filter size={16} color="#64748b" />
-                <select 
+                <select
                   value={filterLevel}
                   onChange={(e) => setFilterLevel(e.target.value)}
                   style={{
@@ -341,15 +342,15 @@ const UploadAnalyze = () => {
                       <td style={{ padding: '0.75rem' }}>{result.department_id}</td>
                       <td style={{ padding: '0.75rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div style={{ 
-                            width: 40, 
-                            height: 6, 
-                            backgroundColor: '#f1f5f9', 
+                          <div style={{
+                            width: 40,
+                            height: 6,
+                            backgroundColor: '#f1f5f9',
                             borderRadius: 3,
                             overflow: 'hidden'
                           }}>
-                            <div style={{ 
-                              height: '100%', 
+                            <div style={{
+                              height: '100%',
                               width: `${result.risk_score * 100}%`,
                               backgroundColor: getRiskColor(result.risk_level)
                             }} />
@@ -358,7 +359,7 @@ const UploadAnalyze = () => {
                         </div>
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        <span style={{ 
+                        <span style={{
                           backgroundColor: getRiskBg(result.risk_level),
                           color: getRiskColor(result.risk_level),
                           padding: '0.25rem 0.75rem',
@@ -370,7 +371,7 @@ const UploadAnalyze = () => {
                         </span>
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        <span style={{ 
+                        <span style={{
                           backgroundColor: result.ml_flag === 'ANOMALY' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(34, 197, 94, 0.1)',
                           color: result.ml_flag === 'ANOMALY' ? '#dc2626' : '#22c55e',
                           padding: '0.25rem 0.5rem',
@@ -389,7 +390,7 @@ const UploadAnalyze = () => {
                 </tbody>
               </table>
             </div>
-            
+
             {filteredResults.length > 100 && (
               <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginTop: '1rem' }}>
                 Showing 100 of {filteredResults.length} results
@@ -403,17 +404,17 @@ const UploadAnalyze = () => {
       {!results && (
         <div className="card" style={{ marginTop: '2rem', backgroundColor: '#f8fafc' }}>
           <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Expected CSV Format</h3>
-          <code style={{ 
-            display: 'block', 
-            backgroundColor: '#1e293b', 
-            color: '#e2e8f0', 
-            padding: '1rem', 
+          <code style={{
+            display: 'block',
+            backgroundColor: '#1e293b',
+            color: '#e2e8f0',
+            padding: '1rem',
             borderRadius: 8,
             fontSize: '0.75rem',
             overflow: 'auto'
           }}>
-            transaction_id,timestamp,department_id,vendor_id,vendor_category,amount,payment_method,description<br/>
-            TX-00001,2025-01-10T10:00:00,DEPT-RAIL,VEN-001,Civil Works,150000,NEFT,Infrastructure payment<br/>
+            transaction_id,timestamp,department_id,vendor_id,vendor_category,amount,payment_method,description<br />
+            TX-00001,2025-01-10T10:00:00,DEPT-RAIL,VEN-001,Civil Works,150000,NEFT,Infrastructure payment<br />
             TX-00002,2025-01-10T14:30:00,DEPT-HEALTH-AIIMS,VEN-042,Medical Supplies,85000,RTGS,Medical equipment
           </code>
         </div>

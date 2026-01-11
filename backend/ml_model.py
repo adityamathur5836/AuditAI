@@ -6,7 +6,7 @@ from sklearn.ensemble import IsolationForest
 print("Loading data...")
 
 # 1️⃣ Load CSV
-df = pd.read_csv("transactions_normal.csv")
+df = pd.read_csv("training_transactions.csv")
 df["timestamp"] = pd.to_datetime(df["timestamp"])
 
 print("Data loaded:", df.shape)

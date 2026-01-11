@@ -19,6 +19,7 @@ const Analytics = ({ onViewChange }) => {
   const [alerts, setAlerts] = useState([]);
   const [networkData, setNetworkData] = useState(null);
   const [benfordData, setBenfordData] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,23 +30,25 @@ const Analytics = ({ onViewChange }) => {
     setLoading(true);
     const health = await checkHealth();
     if (health.status === 'healthy') {
-      const [alertsData, netData, benStats] = await Promise.all([
+      const [alertsData, netData, benStats, statistics] = await Promise.all([
         fetchAlerts(1000, 0.0),
         fetchNetworkGraph(),
-        fetchBenfordStats()
+        fetchBenfordStats(),
+        fetchStats()
       ]);
       setAlerts(alertsData);
       setNetworkData(netData);
       setBenfordData(benStats);
+      setStats(statistics);
     }
     setLoading(false);
   };
 
 
-  // derived metrics
-  const totalFraud = alerts.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  // derived metrics (fallback to local calculation if stats missing)
+  const totalFraud = stats?.total_flagged_amount || alerts.reduce((acc, curr) => acc + (curr.amount || 0), 0);
   const highRiskVendors = [...new Set(alerts.filter(a => a.risk_score > 0.6).map(a => a.vendor))].length;
-  const openInvestigations = alerts.filter(a => a.risk_score > 0.8).length;
+  const openInvestigations = stats?.critical_alerts || alerts.filter(a => a.risk_score > 0.8).length;
 
   // Risk ranking by vendor
   const vendorRisk = {};
