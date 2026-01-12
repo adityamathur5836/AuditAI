@@ -16,11 +16,21 @@ class FraudDetector:
     Uses trained_model.pkl containing department baselines and Isolation Forest model.
     """
     
-    def __init__(self, model_path: str = "trained_model.pkl"):
+    def __init__(self, transaction_file: str = 'demo_transactions_with_anomalies.csv', model_path: str = 'trained_model.pkl', config: dict = None):
         self.model_path = model_path
-        self.dept_stats = None
-        self.iso_model = None
         self.model_loaded = False
+        self.iso_model = None
+        self.dept_stats = None
+        self.config = config or {  # Use provided config or defaults
+            "z_score_threshold": 3.0,
+            "iqr_multiplier": 1.5,
+            "off_hours_enabled": True,
+            "weekend_flagging": True,
+            "off_hours_start": 22,
+            "off_hours_end": 6,
+            "critical_threshold": 0.7,  # 70%
+            "high_threshold": 0.4  # 40%
+        }
         self._load_model()
     
     def _load_model(self) -> None:
@@ -71,10 +81,11 @@ class FraudDetector:
         
         # 1. Z-score analysis (department baseline)
         z_score = self._compute_z_score(amount, dept_id)
-        if z_score is not None and abs(z_score) > 3:
+        z_threshold = self.config.get("z_score_threshold", 3.0)
+        if z_score is not None and abs(z_score) > z_threshold:
             risk_score += 30
             reasons.append(f"Extreme deviation from department average (z-score: {z_score:.2f})")
-        elif z_score is not None and abs(z_score) > 2:
+        elif z_score is not None and abs(z_score) > (z_threshold - 1):
             risk_score += 15
             reasons.append(f"Significant deviation from department average (z-score: {z_score:.2f})")
         
@@ -93,7 +104,7 @@ class FraudDetector:
         
         # 4. Off-hours check
         timestamp = transaction.get('timestamp')
-        if timestamp:
+        if timestamp and self.config.get("off_hours_enabled", True):
             is_off_hours, off_hours_reason = self._check_off_hours(timestamp)
             if is_off_hours:
                 risk_score += 15
@@ -171,40 +182,56 @@ class FraudDetector:
             return False
         
         stats = self.dept_stats.loc[dept_id]
-        q3 = stats['q3']
-        iqr = stats['iqr']
+        q1 = stats['25%']
+        q3 = stats['75%']
+        iqr = q3 - q1
         
-        upper_bound = q3 + 1.5 * iqr
-        return amount > upper_bound
+        iqr_multiplier = self.config.get("iqr_multiplier", 1.5)
+        lower_bound = q1 - (iqr_multiplier * iqr)
+        upper_bound = q3 + (iqr_multiplier * iqr)
+        
+        return amount < lower_bound or amount > upper_bound
     
-    def _check_off_hours(self, timestamp: str) -> Tuple[bool, str]:
+    def _check_off_hours(self, timestamp_str: str) -> tuple:
         """Check if transaction occurred during off-hours"""
         try:
-            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            # Parse ISO format timestamp
+            dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             hour = dt.hour
-            weekday = dt.weekday()
             
-            if weekday >= 5:  # Weekend
-                return True, f"Transaction on {dt.strftime('%A')} (weekend)"
-            if hour < 6 or hour > 22:
-                return True, f"Transaction at {dt.strftime('%H:%M')} (outside business hours)"
+            off_hours_start = self.config.get("off_hours_start", 22)
+            off_hours_end = self.config.get("off_hours_end", 6)
+            weekend_flagging = self.config.get("weekend_flagging", True)
             
-            return False, ""
-        except:
-            return False, ""
+            # Check off-hours (e.g., 10 PM to 6 AM)
+            is_off_hours = hour >= off_hours_start or hour < off_hours_end
+            
+            # Check weekend
+            is_weekend = dt.weekday() >= 5  # Saturday=5, Sunday=6
+            
+            if is_off_hours:
+                return (True, f"Transaction occurred during off-hours ({hour}:00)")
+            elif is_weekend and weekend_flagging:
+                return (True, f"Transaction occurred on weekend")
+            else:
+                return (False, "")
+        except Exception as e:
+            return (False, "")
     
     def _get_risk_level(self, score: float) -> str:
-        """Convert risk score to human-readable level"""
-        if score >= 0.8:
+        """Convert risk score to human-readable level using configurable thresholds"""
+        # Thresholds are in percentage (0-100), normalize to 0-1
+        critical_threshold = self.config.get("critical_threshold", 0.7)
+        high_threshold = self.config.get("high_threshold", 0.4)
+        
+        if score > critical_threshold:
             return "CRITICAL"
-        elif score >= 0.6:
+        elif score > high_threshold:
             return "HIGH"
-        elif score >= 0.4:
+        elif score > 0.3:
             return "MEDIUM"
-        elif score >= 0.2:
-            return "LOW"
         else:
-            return "MINIMAL"
+            return "LOW"
     
     def get_model_info(self) -> Dict:
         """Get information about the loaded model"""

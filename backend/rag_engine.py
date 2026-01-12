@@ -37,51 +37,73 @@ class RagEngine:
             self.tfidf_matrix = self.vectorizer.fit_transform(self.chunks)
         else:
             self.tfidf_matrix = None
+            
+        # Configure Gemini
+        import os
+        import google.generativeai as genai
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            try:
+                genai.configure(api_key=api_key)
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                self.ai_enabled = True
+            except Exception as e:
+                print(f"Failed to config GenAI: {e}")
+                self.ai_enabled = False
+        else:
+            self.ai_enabled = False
+            print("⚠️ GEMINI_API_KEY not found. Policy Chat will use basic retrieval.")
 
-    def search(self, query: str, top_k: int = 3) -> list:
+    def search(self, query: str, top_k: int = 3) -> dict:
         """
-        Retrieve top_k most relevant policy chunks for the query.
+        Retrieve context and answer using GenAI.
         """
         if not self.chunks or self.tfidf_matrix is None:
-            return []
+            return {"answer": "I don't have enough policy data to answer that.", "context": []}
 
+        # 1. Retrieval (TF-IDF)
         query_vec = self.vectorizer.transform([query])
-        
-        # Calculate cosine similarity
         similarities = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
-        
-        # Get top indices
         top_indices = similarities.argsort()[-top_k:][::-1]
         
-        results = []
-        for idx in top_indices:
-            if similarities[idx] > 0.1: # Threshold for relevance
-                results.append({
-                    "text": self.chunks[idx],
-                    "score": float(similarities[idx])
-                })
+        relevant_chunks = [self.chunks[i] for i in top_indices if similarities[i] > 0.1]
+        context_str = "\n\n".join(relevant_chunks)
         
-        return results
+        if not relevant_chunks:
+            return {"answer": "I couldn't find any specific policy regarding that.", "context": []}
 
-    def ask(self, query: str) -> dict:
-        """
-        Simulate an LLM answer by retrieving context and formatting it.
-        """
-        results = self.search(query)
-        if not results:
+        # 2. Augmented Generation (Gemini)
+        if self.ai_enabled:
+            try:
+                prompt = f"""
+                You are an expert Government Audit Consultant. Answer the following question strictly based on the provided Policy Context.
+                
+                Policy Context:
+                {context_str}
+                
+                Question: {query}
+                
+                Answer (keep it professional, concise, and cite the specific section/rule numbers):
+                """
+                response = self.model.generate_content(prompt)
+                return {
+                    "answer": response.text,
+                    "context": relevant_chunks
+                }
+            except Exception as e:
+                import traceback
+                print(f"GenAI Error: {e}")
+                print(traceback.format_exc())
+                return {
+                    "answer": "I found relevant policies but couldn't generate a summary. See context below.",
+                    "context": relevant_chunks
+                }
+        else:
+            # Fallback
             return {
-                "answer": "I couldn't find any specific policy details regarding your query in the handbook.",
-                "context": []
+                "answer": "Here are the relevant policy sections I found:",
+                "context": relevant_chunks
             }
-        
-        # Construct a "synthesized" answer
-        best_match = results[0]['text']
-        
-        # Heuristic: If we found a good match, format it nicely.
-        # Clean up the newlines for the 'answer' part so it looks like a paragraph
-        clean_text = best_match.replace('\n', ' ')
-        
-        return {
-            "answer": f"Based on internal regulations: {clean_text}",
-            "context": results
-        }
+
+    def ask(self, question: str) -> dict:
+        return self.search(question)

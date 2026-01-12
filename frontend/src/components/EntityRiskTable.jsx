@@ -132,20 +132,20 @@ const EntityRiskTable = ({ entities = [], onVendorView }) => {
                                         </td>
                                         <td style={{ padding: '1rem', textAlign: 'right' }}>
                                             <button
-                                                onClick={() => onVendorView(entity.name)}
+                                                onClick={() => onVendorView(entity.id)}
                                                 className="btn-outline"
                                                 style={{
                                                     padding: '0.4rem 0.8rem',
                                                     fontSize: '0.75rem',
                                                     borderRadius: '6px',
-                                                    border: '1px solid #cbd5e1',
+                                                    border: '1px solid #2563eb',
                                                     backgroundColor: 'transparent',
                                                     cursor: 'pointer',
                                                     fontWeight: 600,
-                                                    color: '#334155'
+                                                    color: '#2563eb'
                                                 }}
                                             >
-                                                Audit Profile
+                                                View Profile
                                             </button>
                                         </td>
                                     </tr>

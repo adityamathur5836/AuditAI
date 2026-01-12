@@ -10,11 +10,13 @@ import Analytics from './components/Analytics';
 import AlertsQueue from './components/AlertsQueue';
 // import TransactionsPage from './components/TransactionsPage'; // Deprecated
 import DepartmentsPage from './components/DepartmentsPage';
+import DepartmentDetail from './components/DepartmentDetail';
 import Configuration from './components/Configuration';
 import UploadAnalyze from './components/UploadAnalyze';
 import VendorsPage from './components/VendorsPage';
 import Login from './components/Login';
 import PolicyChat from './components/PolicyChat';
+import AuditPage from './components/AuditPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { User, ChevronRight, Bell, Search, Filter, Calendar, AlertCircle, Activity, Settings, Database, Wifi, WifiOff, LogOut, ShieldAlert, Building2 } from 'lucide-react';
 import { fetchAlerts, fetchStats, checkHealth, updateAlertStatus as apiUpdateStatus, fetchEntities } from './api';
@@ -28,6 +30,8 @@ const AuditDashboard = () => {
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [view, setView] = useState('list');
+  const [vendorId, setVendorId] = useState(null);
+  const [departmentId, setDepartmentId] = useState(null); // null = All Time, 30 = Last 30 Days
   const [dateFilter, setDateFilter] = useState(null); // null = All Time, 30 = Last 30 Days
 
   useEffect(() => {
@@ -116,18 +120,34 @@ const AuditDashboard = () => {
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
             <div>
               <nav style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                <span>Home</span> <ChevronRight size={12} /> <span>{view === 'list' ? 'Dashboard Overview' : view.replace('_', ' ')}</span>
+                <span>Home</span> <ChevronRight size={12} />
+                {view === 'departments' && departmentId ? (
+                  <>
+                    <span>Departments</span> <ChevronRight size={12} /> <span>{departmentId}</span>
+                  </>
+                ) : (
+                  <span>{view === 'list' ? 'Dashboard Overview' : view.replace('_', ' ')}</span>
+                )}
               </nav>
               <h1 style={{ fontSize: '1.875rem', color: '#0f172a', fontWeight: 800 }}>
-                {view === 'list' ? 'National Dashboard'
-                  : view === 'alerts_queue' ? 'Alerts & Risk Queue'
-                    : view === 'transactions' ? 'Transaction Ledger'
-                      : view === 'config' ? 'System Configuration'
-                        : view === 'vendors' ? 'Vendor Risk Registry'
-                          : view === 'upload' ? 'Upload & Analyze'
-                            : 'Dashboard'}
+                {view === 'departments' && departmentId
+                  ? `${departmentId} - Department Analysis`
+                  : view === 'list' ? 'National Dashboard'
+                    : view === 'alerts_queue' ? 'Alerts & Risk Queue'
+                      : view === 'vendors' ? 'Vendor Risk Registry'
+                        : view === 'upload' ? 'Upload & Analyze'
+                          : view === 'analytics' ? 'Analytics Dashboard'
+                            : view === 'departments' ? 'Departmental Oversight'
+                              : view === 'chat' ? 'Policy Genius'
+                                : view === 'audit' ? 'Audit Management'
+                                  : view === 'config' ? 'System Configuration'
+                                    : 'Dashboard'}
               </h1>
-              <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Monitoring fiscal irregularities across all zones (Entity-First View).</p>
+              <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                {view === 'departments' && departmentId
+                  ? 'Comprehensive breakdown of spending, vendors, and anomalies'
+                  : 'Monitoring fiscal irregularities across all zones (Entity-First View).'}
+              </p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -255,7 +275,15 @@ const AuditDashboard = () => {
         ) : view === 'alerts_queue' ? (
           <AlertsQueue alerts={alerts} onInvestigate={handleInvestigate} />
         ) : view === 'departments' ? (
-          <DepartmentsPage />
+          departmentId ? (
+            <DepartmentDetail
+              departmentId={departmentId}
+              alerts={alerts}
+              onBack={() => setDepartmentId(null)}
+            />
+          ) : (
+            <DepartmentsPage onDepartmentClick={(id) => setDepartmentId(id)} />
+          )
         ) : view === 'upload' ? (
           <UploadAnalyze />
         ) : view === 'vendors' ? (
@@ -265,6 +293,8 @@ const AuditDashboard = () => {
             dateFilter={dateFilter}
             onFilterChange={setDateFilter}
           />
+        ) : view === 'audit' ? (
+          <AuditPage alerts={alerts} onUpdateStatus={updateAlertStatus} />
         ) : view === 'config' ? (
           <Configuration />
         ) : view === 'chat' ? (

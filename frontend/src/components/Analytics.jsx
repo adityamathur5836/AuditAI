@@ -13,14 +13,18 @@ import {
 } from 'lucide-react';
 import BenfordChart from './BenfordChart';
 import NetworkGraph from './NetworkGraph';
-import { fetchAlerts, fetchStats, checkHealth, fetchNetworkGraph, fetchBenfordStats } from '../api';
+import RiskHeatmap from './RiskHeatmap';
+import { fetchAlerts, fetchStats, checkHealth, fetchNetworkGraph, fetchBenfordStats, fetchDistrictRisk, fetchDepartmentRisk } from '../api';
 
 const Analytics = ({ onViewChange }) => {
   const [alerts, setAlerts] = useState([]);
   const [networkData, setNetworkData] = useState(null);
   const [benfordData, setBenfordData] = useState(null);
+  const [districtData, setDistrictData] = useState([]);
+  const [departmentData, setDepartmentData] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [heatmapTab, setHeatmapTab] = useState('district');
 
   useEffect(() => {
     loadData();
@@ -30,16 +34,20 @@ const Analytics = ({ onViewChange }) => {
     setLoading(true);
     const health = await checkHealth();
     if (health.status === 'healthy') {
-      const [alertsData, netData, benStats, statistics] = await Promise.all([
+      const [alertsData, netData, benStats, statistics, districts, departments] = await Promise.all([
         fetchAlerts(1000, 0.0),
         fetchNetworkGraph(),
         fetchBenfordStats(),
-        fetchStats()
+        fetchStats(),
+        fetchDistrictRisk(),
+        fetchDepartmentRisk()
       ]);
       setAlerts(alertsData);
       setNetworkData(netData);
       setBenfordData(benStats);
       setStats(statistics);
+      setDistrictData(districts);
+      setDepartmentData(departments);
     }
     setLoading(false);
   };
@@ -71,25 +79,6 @@ const Analytics = ({ onViewChange }) => {
 
   return (
     <div className="analytics-view">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <nav style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-            <span>Analytics</span> <ChevronRight size={12} /> <span>Visual Intelligence</span>
-          </nav>
-          <h1 style={{ fontSize: '1.875rem', color: '#0f172a' }}>Advanced Fraud Analytics</h1>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ padding: '0.5rem 1rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.875rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              Fiscal Year 2024 <Calendar size={14} />
-            </div>
-          </div>
-          <button className="btn btn-primary" onClick={loadData}>
-            <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh Intelligence
-          </button>
-        </div>
-      </header>
-
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
         <KPICard
@@ -117,6 +106,56 @@ const Analytics = ({ onViewChange }) => {
           value="14 Days"
           badge={{ text: 'Stable', color: '#475569', bg: '#f1f5f9' }}
           sub="Target: 10 Days"
+        />
+      </div>
+
+      {/* Strategic Risk Heatmap */}
+      <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.25rem' }}>Strategic Risk Heatmap</h3>
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Risk concentration across districts and departments for audit prioritization</p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', padding: '0.25rem', background: '#f1f5f9', borderRadius: '8px' }}>
+            <button
+              onClick={() => setHeatmapTab('district')}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                borderRadius: '6px',
+                border: 'none',
+                background: heatmapTab === 'district' ? 'white' : 'transparent',
+                color: heatmapTab === 'district' ? '#0f172a' : '#64748b',
+                cursor: 'pointer',
+                boxShadow: heatmapTab === 'district' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              Districts
+            </button>
+            <button
+              onClick={() => setHeatmapTab('department')}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                borderRadius: '6px',
+                border: 'none',
+                background: heatmapTab === 'department' ? 'white' : 'transparent',
+                color: heatmapTab === 'department' ? '#0f172a' : '#64748b',
+                cursor: 'pointer',
+                boxShadow: heatmapTab === 'department' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              Departments
+            </button>
+          </div>
+        </div>
+        <RiskHeatmap
+          data={heatmapTab === 'district' ? districtData : departmentData}
+          type={heatmapTab}
         />
       </div>
 

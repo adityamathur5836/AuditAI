@@ -175,9 +175,9 @@ const UploadAnalyze = () => {
             <label
               htmlFor="file-upload"
               className="btn btn-secondary"
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', backgroundColor: '#1975d1ff',color: '#fff' }}
             >
-              <FileText size={16} style={{ marginRight: '0.5rem' }} />
+              <FileText size={16} style={{ marginRight: '0.5rem',color: '#fff' }} />
               Browse Files
             </label>
 

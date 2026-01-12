@@ -19,7 +19,7 @@ const BenfordChart = ({ data }) => {
     const isAnomaly = data.stats.is_anomalous;
 
     return (
-        <div className="card" style={{ position: 'relative' }}>
+        <div className="card" style={{ position: 'relative',outline: "none" }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div>
                     <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Benford's Law Analysis</h3>
@@ -31,7 +31,10 @@ const BenfordChart = ({ data }) => {
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     backgroundColor: isAnomaly ? '#fee2e2' : '#dcfce7',
-                    color: isAnomaly ? '#dc2626' : '#16a34a'
+                    color: isAnomaly ? '#dc2626' : '#16a34a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}>
                     {isAnomaly ? 'DETECTED ANOMALY' : 'PASSED'}
                 </div>

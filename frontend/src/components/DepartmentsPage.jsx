@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchDepartments } from '../api';
 import { Building2, AlertTriangle, IndianRupee, PieChart, TrendingUp, AlertOctagon } from 'lucide-react';
 
-const DepartmentsPage = () => {
+const DepartmentsPage = ({ onDepartmentClick }) => {
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -35,17 +35,30 @@ const DepartmentsPage = () => {
 
     return (
         <div className="departments-view">
-            <header style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a' }}>Departmental Oversight</h1>
-                <p style={{ color: '#64748b' }}>Organizational risk assessment by department.</p>
-            </header>
-
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>Loading departmental data...</div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                     {departments.map((dept) => (
-                        <div key={dept.id} className="card" style={{ padding: '1.5rem', borderTop: `4px solid ${getStatusColor(dept.status)}` }}>
+                        <div
+                            key={dept.id}
+                            className="card"
+                            onClick={() => onDepartmentClick && onDepartmentClick(dept.id)}
+                            style={{
+                                padding: '1.5rem',
+                                borderTop: `4px solid ${getStatusColor(dept.status)}`,
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s, box-shadow 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <div>
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -720,14 +720,185 @@ async def get_network_graph():
 @app.get("/api/stats/benford")
 async def get_benford_stats():
     """Return Benford's Law analysis for current transactions"""
-    cursor = transactions_collection.find({})
+    # Use alerts_collection which has transaction data
+    cursor = alerts_collection.find({})
     transactions = await cursor.to_list(length=10000)
     
-    if not transactions:
-        return {"valid": False, "error": "No data"}
+    if not transactions or len(transactions) < 50:
+        return {"valid": False, "error": "Insufficient data (need > 50 transactions)"}
         
-    amounts = [t.get('amount', 0) for t in transactions]
+    amounts = [t.get('amount', 0) for t in transactions if t.get('amount', 0) > 0]
     return benford_analyzer.analyze(amounts)
+
+@app.get("/api/risk/districts")
+async def get_district_risk_heatmap():
+    """
+    Strategic risk heatmap: District-wise aggregation
+    Returns risk concentration by district for audit prioritization
+    """
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$district_id",
+                "total_transactions": {"$sum": 1},
+                "total_value": {"$sum": "$amount"},
+                "high_risk_count": {
+                    "$sum": {"$cond": [{"$gte": ["$risk_score", 0.7]}, 1, 0]}
+                },
+                "avg_risk_score": {"$avg": "$risk_score"},
+                "risk_scores": {"$push": "$risk_score"}
+            }
+        },
+        {"$sort": {"avg_risk_score": -1}}
+    ]
+    
+    cursor = alerts_collection.aggregate(pipeline)
+    districts = await cursor.to_list(length=100)
+    
+    results = []
+    for d in districts:
+        avg_risk = d['avg_risk_score']
+        risk_density = d['high_risk_count'] / d['total_transactions'] if d['total_transactions'] > 0 else 0
+        
+        # Risk classification
+        if avg_risk > 0.7 or risk_density > 0.5:
+            risk_level = "HIGH"
+        elif avg_risk > 0.4 or risk_density > 0.3:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+        
+        results.append({
+            "district": d['_id'] or "Unknown",
+            "total_transactions": d['total_transactions'],
+            "total_value": round(d['total_value'], 2),
+            "high_risk_count": d['high_risk_count'],
+            "avg_risk_score": round(avg_risk, 3),
+            "risk_density": round(risk_density, 3),
+            "risk_level": risk_level
+        })
+    
+    return results
+
+@app.get("/api/risk/departments")
+async def get_department_risk_heatmap():
+    """
+    Strategic risk heatmap: Department-wise aggregation
+    Returns risk concentration by department for audit prioritization
+    """
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$department_id",
+                "total_transactions": {"$sum": 1},
+                "total_value": {"$sum": "$amount"},
+                "high_risk_count": {
+                    "$sum": {"$cond": [{"$gte": ["$risk_score", 0.7]}, 1, 0]}
+                },
+                "avg_risk_score": {"$avg": "$risk_score"}
+            }
+        },
+        {"$sort": {"avg_risk_score": -1}}
+    ]
+    
+    cursor = alerts_collection.aggregate(pipeline)
+    departments = await cursor.to_list(length=100)
+    
+    results = []
+    for d in departments:
+        avg_risk = d['avg_risk_score']
+        risk_density = d['high_risk_count'] / d['total_transactions'] if d['total_transactions'] > 0 else 0
+        
+        # Risk classification
+        if avg_risk > 0.7 or risk_density > 0.5:
+            risk_level = "HIGH"
+        elif avg_risk > 0.4 or risk_density > 0.3:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+        
+        results.append({
+            "department": d['_id'] or "Unknown",
+            "total_transactions": d['total_transactions'],
+            "total_value": round(d['total_value'], 2),
+            "high_risk_count": d['high_risk_count'],
+            "avg_risk_score": round(avg_risk, 3),
+            "risk_density": round(risk_density, 3),
+            "risk_level": risk_level
+        })
+    
+    return results
+
+@app.get("/api/benford")
+async def get_benford_alias():
+    """Alias for /api/stats/benford"""
+    return await get_benford_stats()
+
+# Configuration Management
+class ConfigUpdate(BaseModel):
+    criticalThreshold: Optional[int] = 80
+    highThreshold: Optional[int] = 60
+    zScoreMultiplier: Optional[float] = 3.0
+    iqrMultiplier: Optional[float] = 1.5
+    offHoursEnabled: Optional[bool] = True
+    offHoursStart: Optional[int] = 22
+    offHoursEnd: Optional[int] = 6
+    weekendFlagging: Optional[bool] = True
+
+# Global configuration (in-memory for now, could be moved to database)
+app_config = {
+    "z_score_threshold": 3.0,
+    "iqr_multiplier": 1.5,
+    "off_hours_enabled": True,
+    "weekend_flagging": True,
+    "off_hours_start": 22,
+    "off_hours_end": 6,
+    "critical_threshold": 0.7,  # 70% normalized
+    "high_threshold": 0.4  # 40% normalized
+}
+
+@app.get("/api/config")
+async def get_configuration():
+    """Get current system configuration"""
+    return {
+        "criticalThreshold": 70,  # 0.7 normalized
+        "highThreshold": 40,  # 0.4 normalized
+        "zScoreMultiplier": app_config["z_score_threshold"],
+        "iqrMultiplier": app_config["iqr_multiplier"],
+        "offHoursEnabled": app_config["off_hours_enabled"],
+        "offHoursStart": app_config["off_hours_start"],
+        "offHoursEnd": app_config["off_hours_end"],
+        "weekendFlagging": app_config["weekend_flagging"]
+    }
+
+@app.post("/api/config")
+async def update_configuration(config: ConfigUpdate):
+    """Update system configuration"""
+    # Update global config
+    if config.zScoreMultiplier:
+        app_config["z_score_threshold"] = config.zScoreMultiplier
+    if config.iqrMultiplier:
+        app_config["iqr_multiplier"] = config.iqrMultiplier
+    if config.offHoursEnabled is not None:
+        app_config["off_hours_enabled"] = config.offHoursEnabled
+    if config.weekendFlagging is not None:
+        app_config["weekend_flagging"] = config.weekendFlagging
+    if config.offHoursStart:
+        app_config["off_hours_start"] = config.offHoursStart
+    if config.offHoursEnd:
+        app_config["off_hours_end"] = config.offHoursEnd
+    
+    # Convert percentage thresholds to 0-1 scale
+    if config.criticalThreshold:
+        app_config["critical_threshold"] = config.criticalThreshold / 100.0
+    if config.highThreshold:
+        app_config["high_threshold"] = config.highThreshold / 100.0
+    
+    # Reload fraud detector with new config
+    global detector
+    detector = FraudDetector(config=app_config)
+    
+    return {"success": True, "message": "Configuration updated successfully"}
 
 # ... (existing upload code) ...
 

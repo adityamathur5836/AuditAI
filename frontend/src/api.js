@@ -212,25 +212,25 @@ export default {
 /**
  * Fetch Network Graph Data
  */
-export async function fetchNetworkGraph() {
-    try {
-        const response = await fetch(`${API_BASE}/api/network/graph`, { headers: getAuthHeaders() });
-        if (!response.ok) return { nodes: [], links: [] };
-        return await response.json();
-    } catch (e) {
-        console.error("Graph fetch error", e);
-        return { nodes: [], links: [] };
-    }
-}
+// export async function fetchNetworkGraph() {
+//     try {
+//         const response = await fetch(`${API_BASE}/api/network/graph`, { headers: getAuthHeaders() });
+//         if (!response.ok) return { nodes: [], links: [] };
+//         return await response.json();
+//     } catch (e) {
+//         console.error("Graph fetch error", e);
+//         return { nodes: [], links: [] };
+//     }
+// }
 
 /**
  * Fetch Benford's Law Stats
  */
-export async function fetchBenfordStats() {
-    const response = await fetch(`${API_BASE}/api/stats/benford`, { headers: getAuthHeaders() });
-    if (!response.ok) return null;
-    return await response.json();
-}
+// export async function fetchBenfordStats() {
+//     const response = await fetch(`${API_BASE}/api/stats/benford`, { headers: getAuthHeaders() });
+//     if (!response.ok) return null;
+//     return await response.json();
+// }
 
 /**
  * Fetch Entity Risk Registry (Aggregated by Vendor)
@@ -268,6 +268,62 @@ export async function fetchDepartments() {
         return await response.json();
     } catch (error) {
         console.error('Error fetching departments:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch Network Graph Data
+ */
+export async function fetchNetworkGraph() {
+    try {
+        const response = await fetch(`${API_BASE}/api/network/graph`, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Failed to fetch network graph');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching network graph:', error);
+        return null;
+    }
+}
+
+/**
+ * Fetch Benford's Law Analysis
+ */
+export async function fetchBenfordStats() {
+    try {
+        const response = await fetch(`${API_BASE}/api/benford`, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Failed to fetch Benford stats');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Benford stats:', error);
+        return null;
+    }
+}
+
+/**
+ * Fetch District Risk Heatmap
+ */
+export async function fetchDistrictRisk() {
+    try {
+        const response = await fetch(`${API_BASE}/api/risk/districts`, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Failed to fetch district risk');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching district risk:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch Department Risk Heatmap
+ */
+export async function fetchDepartmentRisk() {
+    try {
+        const response = await fetch(`${API_BASE}/api/risk/departments`, { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Failed to fetch department risk');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching department risk:', error);
         return [];
     }
 }

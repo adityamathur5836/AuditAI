@@ -10,6 +10,7 @@ const Sidebar = ({ currentView, onViewChange }) => {
     { icon: UploadCloud, id: 'upload', label: 'Upload & Analyze' },
     { icon: FileText, id: 'analytics', label: 'Analytics' },
     { icon: Users, id: 'vendors', label: 'Vendors' },
+    { icon: ShieldAlert, id: 'audit', label: 'Audit Dashboard' },
     { icon: AlertCircle, id: 'alerts_queue', label: 'Alerts Queue' },
     { icon: Building2, id: 'departments', label: 'Departmental Oversight' },
     { icon: Sparkles, id: 'chat', label: 'Policy Genius' },

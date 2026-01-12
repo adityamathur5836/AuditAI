@@ -7,7 +7,7 @@ const Configuration = () => {
   const [activeTab, setActiveTab] = useState('risk');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
-  
+
   // Settings state
   const [settings, setSettings] = useState({
     criticalThreshold: 80,
@@ -23,24 +23,61 @@ const Configuration = () => {
     alertEmail: '',
   });
 
-  // Load settings from localStorage on mount
+  // Load settings from backend on mount
   useEffect(() => {
-    const saved = localStorage.getItem('auditai_config');
-    if (saved) {
-      setSettings(JSON.parse(saved));
-    }
+    loadConfig();
   }, []);
 
-  const saveSettings = () => {
+  const loadConfig = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/config`);
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data);
+      } else {
+        // Fallback to localStorage if backend not available
+        const saved = localStorage.getItem('auditai_config');
+        if (saved) {
+          setSettings(JSON.parse(saved));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load config from backend:', error);
+      // Fallback to localStorage
+      const saved = localStorage.getItem('auditai_config');
+      if (saved) {
+        setSettings(JSON.parse(saved));
+      }
+    }
+  };
+
+  const saveSettings = async () => {
     setSaving(true);
-    // Save to localStorage
-    localStorage.setItem('auditai_config', JSON.stringify(settings));
-    
-    setTimeout(() => {
-      setSaving(false);
-      setMessage({ type: 'success', text: 'Configuration saved successfully!' });
-      setTimeout(() => setMessage(null), 3000);
-    }, 500);
+
+    try {
+      // Save to backend
+      const response = await fetch(`${API_BASE}/api/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+
+      if (response.ok) {
+        // Also save to localStorage as backup
+        localStorage.setItem('auditai_config', JSON.stringify(settings));
+        setMessage({ type: 'success', text: 'Configuration saved successfully! Fraud detector updated.' });
+      } else {
+        throw new Error('Backend save failed');
+      }
+    } catch (error) {
+      console.error('Failed to save to backend:', error);
+      // Fallback to only localStorage
+      localStorage.setItem('auditai_config', JSON.stringify(settings));
+      setMessage({ type: 'success', text: 'Configuration saved locally (backend unavailable)' });
+    }
+
+    setSaving(false);
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const resetDefaults = () => {
@@ -65,7 +102,7 @@ const Configuration = () => {
 
   const clearAllAlerts = async () => {
     if (!window.confirm('Are you sure you want to clear all alerts? This cannot be undone.')) return;
-    
+
     try {
       const response = await fetch(`${API_BASE}/api/alerts`, { method: 'DELETE' });
       const data = await response.json();
@@ -89,9 +126,9 @@ const Configuration = () => {
 
       {/* Message Banner */}
       {message && (
-        <div style={{ 
-          padding: '1rem', 
-          marginBottom: '1.5rem', 
+        <div style={{
+          padding: '1rem',
+          marginBottom: '1.5rem',
           borderRadius: 8,
           display: 'flex',
           alignItems: 'center',
@@ -108,12 +145,12 @@ const Configuration = () => {
         {/* Settings Sidebar */}
         <div className="card" style={{ padding: '0.5rem', height: 'fit-content' }}>
           {tabs.map((tab) => (
-            <div 
+            <div
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{ 
-                padding: '0.75rem 1rem', 
-                borderRadius: '6px', 
+              style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '6px',
                 backgroundColor: activeTab === tab.id ? '#eff6ff' : 'transparent',
                 color: activeTab === tab.id ? '#2563eb' : '#475569',
                 fontWeight: activeTab === tab.id ? 700 : 500,
@@ -133,7 +170,7 @@ const Configuration = () => {
 
         {/* Main Settings Content */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+
           {activeTab === 'risk' && (
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
@@ -148,13 +185,13 @@ const Configuration = () => {
                     Critical Risk Threshold (%)
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <input 
-                      type="range" 
-                      min="50" 
-                      max="100" 
+                    <input
+                      type="range"
+                      min="50"
+                      max="100"
                       value={settings.criticalThreshold}
-                      onChange={(e) => setSettings({...settings, criticalThreshold: parseInt(e.target.value)})}
-                      style={{ flex: 1 }} 
+                      onChange={(e) => setSettings({ ...settings, criticalThreshold: parseInt(e.target.value) })}
+                      style={{ flex: 1 }}
                     />
                     <span style={{ fontWeight: 700, minWidth: 40 }}>{settings.criticalThreshold}%</span>
                   </div>
@@ -162,20 +199,20 @@ const Configuration = () => {
                     Transactions above this score are marked CRITICAL
                   </p>
                 </div>
-                
+
                 {/* High Risk Threshold */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>
                     High Risk Threshold (%)
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <input 
-                      type="range" 
-                      min="30" 
-                      max="80" 
+                    <input
+                      type="range"
+                      min="30"
+                      max="80"
                       value={settings.highThreshold}
-                      onChange={(e) => setSettings({...settings, highThreshold: parseInt(e.target.value)})}
-                      style={{ flex: 1 }} 
+                      onChange={(e) => setSettings({ ...settings, highThreshold: parseInt(e.target.value) })}
+                      style={{ flex: 1 }}
                     />
                     <span style={{ fontWeight: 700, minWidth: 40 }}>{settings.highThreshold}%</span>
                   </div>
@@ -186,9 +223,9 @@ const Configuration = () => {
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>
                     Z-Score Threshold
                   </label>
-                  <select 
+                  <select
                     value={settings.zScoreMultiplier}
-                    onChange={(e) => setSettings({...settings, zScoreMultiplier: parseFloat(e.target.value)})}
+                    onChange={(e) => setSettings({ ...settings, zScoreMultiplier: parseFloat(e.target.value) })}
                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                   >
                     <option value="2">High Sensitivity (2.0)</option>
@@ -206,9 +243,9 @@ const Configuration = () => {
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>
                     IQR Outlier Multiplier
                   </label>
-                  <select 
+                  <select
                     value={settings.iqrMultiplier}
-                    onChange={(e) => setSettings({...settings, iqrMultiplier: parseFloat(e.target.value)})}
+                    onChange={(e) => setSettings({ ...settings, iqrMultiplier: parseFloat(e.target.value) })}
                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                   >
                     <option value="1.0">Strict (1.0x IQR)</option>
@@ -223,15 +260,15 @@ const Configuration = () => {
               <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9' }}>
                 <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>Off-Hours Detection</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                  <Toggle 
-                    label="Enable Off-Hours Flagging" 
+                  <Toggle
+                    label="Enable Off-Hours Flagging"
                     checked={settings.offHoursEnabled}
-                    onChange={(v) => setSettings({...settings, offHoursEnabled: v})}
+                    onChange={(v) => setSettings({ ...settings, offHoursEnabled: v })}
                   />
-                  <Toggle 
-                    label="Flag Weekend Transactions" 
+                  <Toggle
+                    label="Flag Weekend Transactions"
                     checked={settings.weekendFlagging}
-                    onChange={(v) => setSettings({...settings, weekendFlagging: v})}
+                    onChange={(v) => setSettings({ ...settings, weekendFlagging: v })}
                   />
                   <div>
                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Off-Hours Window</label>
@@ -248,35 +285,35 @@ const Configuration = () => {
                 <Bell size={20} color="#2563eb" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Notification Preferences</h3>
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <Toggle 
-                  label="Email Alerts" 
+                <Toggle
+                  label="Email Alerts"
                   description="Receive daily summaries of critical anomalies"
                   checked={settings.emailAlerts}
-                  onChange={(v) => setSettings({...settings, emailAlerts: v})}
+                  onChange={(v) => setSettings({ ...settings, emailAlerts: v })}
                 />
-                
+
                 {settings.emailAlerts && (
                   <div style={{ marginLeft: '3rem' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '0.5rem' }}>
                       Alert Email Address
                     </label>
-                    <input 
+                    <input
                       type="email"
                       placeholder="auditor@example.gov.in"
                       value={settings.alertEmail}
-                      onChange={(e) => setSettings({...settings, alertEmail: e.target.value})}
+                      onChange={(e) => setSettings({ ...settings, alertEmail: e.target.value })}
                       style={{ width: '100%', maxWidth: 300, padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                     />
                   </div>
                 )}
 
-                <Toggle 
-                  label="SMS Interventions" 
+                <Toggle
+                  label="SMS Interventions"
                   description="Urgent alerts for high-risk transactions (requires setup)"
                   checked={settings.smsAlerts}
-                  onChange={(v) => setSettings({...settings, smsAlerts: v})}
+                  onChange={(v) => setSettings({ ...settings, smsAlerts: v })}
                 />
               </div>
             </div>
@@ -288,14 +325,14 @@ const Configuration = () => {
                 <Database size={20} color="#2563eb" />
                 <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Data Management</h3>
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="card" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.5rem' }}>⚠️ Danger Zone</h4>
                   <p style={{ fontSize: '0.75rem', color: '#7f1d1d', marginBottom: '1rem' }}>
                     Clear all fraud alerts from the system. This action cannot be undone.
                   </p>
-                  <button 
+                  <button
                     className="btn"
                     onClick={clearAllAlerts}
                     style={{ backgroundColor: '#dc2626', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -335,25 +372,25 @@ const Toggle = ({ label, description, checked, onChange }) => (
       <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{label}</p>
       {description && <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{description}</p>}
     </div>
-    <div 
+    <div
       onClick={() => onChange(!checked)}
-      style={{ 
-        width: 44, 
-        height: 24, 
-        backgroundColor: checked ? '#2563eb' : '#e2e8f0', 
-        borderRadius: '12px', 
+      style={{
+        width: 44,
+        height: 24,
+        backgroundColor: checked ? '#2563eb' : '#e2e8f0',
+        borderRadius: '12px',
         position: 'relative',
         cursor: 'pointer',
         transition: 'background-color 0.2s'
       }}
     >
-      <div style={{ 
-        position: 'absolute', 
-        left: checked ? 22 : 2, 
-        top: 2, 
-        width: 20, 
-        height: 20, 
-        backgroundColor: 'white', 
+      <div style={{
+        position: 'absolute',
+        left: checked ? 22 : 2,
+        top: 2,
+        width: 20,
+        height: 20,
+        backgroundColor: 'white',
         borderRadius: '50%',
         transition: 'left 0.2s',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
